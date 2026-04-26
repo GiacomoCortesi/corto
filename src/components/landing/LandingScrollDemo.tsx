@@ -215,98 +215,117 @@ export function LandingScrollDemo() {
           }}
           className="mx-auto max-w-6xl px-6"
         >
-          {/* long scroll duration that drives the timeline */}
-          <div className="h-[520vh]">
-            <div className="sticky top-[64px]">
-              <div className="min-h-[calc(100vh-64px)] flex items-center">
-                <div className="grid lg:grid-cols-12 gap-10 items-start w-full">
-                  <div className="lg:col-span-4 lg:order-1 order-2">
-                  <div className="relative max-w-[420px]">
-                    {STEPS.map((s, i) => (
-                      <Card
-                        key={s.id}
-                        className={cn(
-                          "absolute inset-0 p-6 sm:p-7 transition-all duration-500 will-change-transform",
-                          i === activeStep
-                            ? "opacity-100 translate-y-0 scale-100 border-primary/35 ring-1 ring-primary/15 bg-card shadow-sm"
-                            : "opacity-0 translate-y-2 scale-[0.985] blur-[1px] pointer-events-none bg-card/60"
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/80">
-                              {s.eyebrow}
-                            </div>
-                            <div className="mt-2 text-[18px] sm:text-[20px] font-semibold tracking-tight leading-snug">
-                              {s.title}
-                            </div>
-                          </div>
-                          <div
-                            className={cn(
-                              "shrink-0 rounded-2xl border px-3 py-2.5 text-muted-foreground bg-background/50 shadow-sm",
-                              i === activeStep && "text-primary border-primary/30"
-                            )}
-                          >
-                            {s.icon}
-                          </div>
-                        </div>
-                        <p className="mt-3 text-sm sm:text-[15px] text-muted-foreground leading-relaxed">
-                          {s.body}
-                        </p>
-
-                        <div className="mt-5 hidden sm:flex items-center gap-2">
-                          <button
-                            type="button"
-                            className={buttonVariants({ size: "sm", variant: "secondary" })}
-                            onClick={() => smoothToStep(Math.min(STEPS.length - 1, i + 1))}
-                          >
-                            Avanti
-                          </button>
-                          {i === 4 ? (
-                            <Link
-                              href="/app"
-                              className={buttonVariants({ size: "sm", variant: "default" })}
-                            >
-                              Apri il planner <ArrowRight className="ml-1.5 size-4" />
-                            </Link>
-                          ) : null}
-                        </div>
-                      </Card>
-                    ))}
-                    {/* reserve height for the absolutely-positioned cards */}
-                    <div className="h-[260px] sm:h-[240px]" aria-hidden />
-                  </div>
-                  </div>
-
-                  <div className="lg:col-span-8 lg:order-2 order-1">
-                    <Card className="relative overflow-hidden border-primary/10 bg-[var(--canvas-bg)]">
-                      <div className="p-4 sm:p-6">
-                        <div className="flex items-center justify-between gap-3"></div>
-
-                        <div className="mt-5">
-                          <DemoGrid step={activeStep} stepT={stepT} />
-                        </div>
-
-                        <div className="mt-5 flex items-center justify-center gap-2">
-                          {STEPS.map((s, i) => (
-                            <button
-                              key={s.id}
-                              type="button"
-                              className={cn(
-                                "h-2.5 w-2.5 rounded-full border transition-all",
-                                i === activeStep
-                                  ? "bg-primary border-primary/40 scale-110"
-                                  : "bg-card border-border/70 opacity-70 hover:opacity-100"
-                              )}
-                              onClick={() => smoothToStep(i)}
-                              aria-label={`Vai a ${s.eyebrow}`}
-                            />
-                          ))}
-                        </div>
+          {/* Mobile: each step becomes a pair (text + demo) */}
+          <div className="lg:hidden py-10 space-y-10">
+            {STEPS.map((s, i) => (
+              <div key={s.id} className="space-y-4">
+                <Card className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/80">
+                        {s.eyebrow}
                       </div>
+                      <div className="mt-2 text-[18px] font-semibold tracking-tight leading-snug">
+                        {s.title}
+                      </div>
+                    </div>
+                    <div className="shrink-0 rounded-2xl border px-3 py-2.5 text-muted-foreground bg-background/50 shadow-sm">
+                      {s.icon}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
+                    {s.body}
+                  </p>
+                </Card>
 
-                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[color-mix(in_oklab,var(--canvas-bg)_92%,transparent)] to-transparent" />
-                    </Card>
+                <Card className="relative border-primary/10 bg-[var(--canvas-bg)]">
+                  <div className="p-4">
+                    <DemoGrid step={i} stepT={1} />
+                  </div>
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[color-mix(in_oklab,var(--canvas-bg)_92%,transparent)] to-transparent" />
+                </Card>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop/tablet: sticky timeline */}
+          <div className="hidden lg:block">
+            {/* long scroll duration that drives the timeline */}
+            <div className="h-[520vh]">
+              <div className="sticky top-[64px]">
+                <div className="min-h-[calc(100vh-64px)] flex items-center">
+                  <div className="grid lg:grid-cols-12 gap-10 items-start w-full">
+                    <div className="lg:col-span-4 lg:order-1 order-2">
+                    <div className="relative max-w-[420px]">
+                      {STEPS.map((s, i) => (
+                        <Card
+                          key={s.id}
+                          className={cn(
+                            "absolute inset-0 p-6 sm:p-7 transition-all duration-500 will-change-transform",
+                            i === activeStep
+                              ? "opacity-100 translate-y-0 scale-100 border-primary/35 ring-1 ring-primary/15 bg-card shadow-sm"
+                              : "opacity-0 translate-y-2 scale-[0.985] blur-[1px] pointer-events-none bg-card/60"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-4">
+                            <div>
+                              <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground/80">
+                                {s.eyebrow}
+                              </div>
+                              <div className="mt-2 text-[18px] sm:text-[20px] font-semibold tracking-tight leading-snug">
+                                {s.title}
+                              </div>
+                            </div>
+                            <div
+                              className={cn(
+                                "shrink-0 rounded-2xl border px-3 py-2.5 text-muted-foreground bg-background/50 shadow-sm",
+                                i === activeStep && "text-primary border-primary/30"
+                              )}
+                            >
+                              {s.icon}
+                            </div>
+                          </div>
+                          <p className="mt-3 text-sm sm:text-[15px] text-muted-foreground leading-relaxed">
+                            {s.body}
+                          </p>
+
+                        </Card>
+                      ))}
+                      {/* reserve height for the absolutely-positioned cards */}
+                      <div className="h-[340px] sm:h-[280px]" aria-hidden />
+                    </div>
+                    </div>
+
+                    <div className="lg:col-span-8 lg:order-2 order-1">
+                      <Card className="relative overflow-hidden border-primary/10 bg-[var(--canvas-bg)]">
+                        <div className="p-4 sm:p-6">
+                          <div className="flex items-center justify-between gap-3"></div>
+
+                          <div className="mt-5">
+                            <DemoGrid step={activeStep} stepT={stepT} />
+                          </div>
+
+                          <div className="mt-5 flex items-center justify-center gap-2">
+                            {STEPS.map((s, i) => (
+                              <button
+                                key={s.id}
+                                type="button"
+                                className={cn(
+                                  "h-2.5 w-2.5 rounded-full border transition-all",
+                                  i === activeStep
+                                    ? "bg-primary border-primary/40 scale-110"
+                                    : "bg-card border-border/70 opacity-70 hover:opacity-100"
+                                )}
+                                onClick={() => smoothToStep(i)}
+                                aria-label={`Vai a ${s.eyebrow}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[color-mix(in_oklab,var(--canvas-bg)_92%,transparent)] to-transparent" />
+                      </Card>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -318,10 +337,7 @@ export function LandingScrollDemo() {
           <Card className="border-primary/15 bg-card/60">
             <div className="px-6 py-10 sm:px-10 sm:py-12 text-center">
               <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground">
-                Pronto a iniziare?
-              </div>
-              <div className="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight">
-                Porta tutto nel planner
+                Pronto?
               </div>
               <p className="mt-3 text-sm sm:text-[15px] text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                 Crea le aiuole, trascina le piante e ottieni suggerimenti: in pochi minuti hai una

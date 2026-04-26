@@ -9,6 +9,13 @@ import { StatsDashboard } from "@/components/panels/StatsDashboard";
 import { ActivityPanel } from "@/components/panels/ActivityPanel";
 import { SuggestionsPanel } from "@/components/panels/SuggestionsPanel";
 import { useGardenStore } from "@/lib/store";
+import {
+  BarChart3Icon,
+  LightbulbIcon,
+  NotebookPenIcon,
+  SlidersHorizontalIcon,
+  UsersIcon,
+} from "lucide-react";
 
 export function RightPanel() {
   return (
@@ -29,22 +36,32 @@ export function RightPanelContent() {
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col">
-      <div className="px-3 pt-3">
+      <div className="px-3 pt-9 lg:pt-9">
         <TabsList className="w-full">
           <TabsTrigger value="properties" className="text-xs">
-            Proprietà
+            <SlidersHorizontalIcon className="size-4 lg:hidden" aria-hidden />
+            <span className="hidden lg:inline">Proprietà</span>
+            <span className="sr-only lg:hidden">Proprietà</span>
           </TabsTrigger>
           <TabsTrigger value="companions" className="text-xs">
-            Compagne
+            <UsersIcon className="size-4 lg:hidden" aria-hidden />
+            <span className="hidden lg:inline">Compagne</span>
+            <span className="sr-only lg:hidden">Compagne</span>
           </TabsTrigger>
           <TabsTrigger value="stats" className="text-xs">
-            Statistiche
+            <BarChart3Icon className="size-4 lg:hidden" aria-hidden />
+            <span className="hidden lg:inline">Statistiche</span>
+            <span className="sr-only lg:hidden">Statistiche</span>
           </TabsTrigger>
           <TabsTrigger value="diary" className="text-xs">
-            Diario
+            <NotebookPenIcon className="size-4 lg:hidden" aria-hidden />
+            <span className="hidden lg:inline">Diario</span>
+            <span className="sr-only lg:hidden">Diario</span>
           </TabsTrigger>
           <TabsTrigger value="suggestions" className="text-xs">
-            Suggerimenti
+            <LightbulbIcon className="size-4 lg:hidden" aria-hidden />
+            <span className="hidden lg:inline">Suggerimenti</span>
+            <span className="sr-only lg:hidden">Suggerimenti</span>
           </TabsTrigger>
         </TabsList>
       </div>

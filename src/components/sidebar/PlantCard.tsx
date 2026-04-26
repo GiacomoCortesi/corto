@@ -8,7 +8,6 @@ import { cellSizeForCatalog, perCellLabelForCellSize } from "@/lib/utils/spacing
 import type { Plant } from "@/lib/types";
 import { Sun, CloudSun, CloudMoon, Droplet, Droplets } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -47,29 +46,50 @@ export function PlantCard({ plant, index, outOfSeason }: Props) {
   const quickAdd = React.useCallback(() => {
     const state = useGardenStore.getState();
     const selectedBedId = state.selection?.kind === "bed" ? state.selection.bedId : undefined;
-    let bedId = selectedBedId ?? state.beds[0]?.id;
+    const bedIds = [
+      ...(selectedBedId ? [selectedBedId] : []),
+      ...state.beds.map((b) => b.id).filter((id) => id !== selectedBedId),
+    ];
 
-    if (!bedId) {
-      bedId = state.addBed();
+    // Try to place in any existing bed, picking the first anchor that can fit the patch.
+    for (const bedId of bedIds) {
+      const bed = useGardenStore.getState().beds.find((b) => b.id === bedId);
+      if (!bed) continue;
+      for (let row = 0; row < bed.rows; row++) {
+        for (let col = 0; col < bed.cols; col++) {
+          const placed = useGardenStore.getState().addPatch(bedId, {
+            plantId: plant.id,
+            anchor: { col, row },
+          });
+          if (placed) {
+            toast.success(`${plant.emoji} ${plant.name} piantato`, {
+              description: "Aggiunto con un tap (usa il primo spazio libero che lo contiene).",
+              duration: 1600,
+            });
+            return;
+          }
+        }
+      }
     }
 
-    const bed = useGardenStore.getState().beds.find((b) => b.id === bedId);
-    if (!bed) return;
-
-    const total = bed.cols * bed.rows;
-    for (let cellIndex = 0; cellIndex < total; cellIndex++) {
-      const placed = useGardenStore.getState().addPlantToBed(bedId, plant.id, cellIndex);
+    // If there are no beds yet, create one and place near top-left.
+    if (state.beds.length === 0) {
+      const newBedId = state.addBed();
+      const placed = useGardenStore.getState().addPatch(newBedId, {
+        plantId: plant.id,
+        anchor: { col: 0, row: 0 },
+      });
       if (placed) {
         toast.success(`${plant.emoji} ${plant.name} piantato`, {
-          description: "Aggiunto con un tap (drag & drop resta disponibile).",
-          duration: 1600,
+          description: "Creata un'aiuola e aggiunta la pianta con un tap.",
+          duration: 1800,
         });
         return;
       }
     }
 
     toast.error("Nessuno spazio libero", {
-      description: "Non ho trovato una cella disponibile in cui far entrare la pianta.",
+      description: "Non ho trovato uno spazio disponibile in cui il patch possa entrare.",
       duration: 2200,
     });
   }, [plant.emoji, plant.id, plant.name]);
@@ -85,6 +105,15 @@ export function PlantCard({ plant, index, outOfSeason }: Props) {
       {...listeners}
       {...attributes}
       style={{ animationDelay: `${index * 18}ms` }}
+      onClick={(e) => {
+        if (isDragging) return;
+        // Mobile/touch-first UX: tap anywhere on the card to place the plant.
+        if (typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches) {
+          e.preventDefault();
+          e.stopPropagation();
+          quickAdd();
+        }
+      }}
       className={cn(
         "group relative rounded-xl border border-border bg-card p-3 cursor-grab active:cursor-grabbing transition-all duration-150",
         "hover:border-primary/40 hover:shadow-sm hover:-translate-y-0.5",
@@ -177,23 +206,6 @@ export function PlantCard({ plant, index, outOfSeason }: Props) {
               ? "utilizzabile ora"
               : "non ora"}
         </span>
-      </div>
-
-      {/* Mobile fallback when drag is hard to use */}
-      <div className="mt-3 sm:hidden">
-        <Button
-          type="button"
-          size="sm"
-          className="w-full justify-center"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            quickAdd();
-          }}
-          disabled={isDragging}
-        >
-          Tocca per aggiungere
-        </Button>
       </div>
     </div>
   );

@@ -62,9 +62,6 @@ export function PlantCatalogContent() {
             </div>
             <h2 className="text-sm font-semibold tracking-tight">Piante</h2>
           </div>
-          <Badge variant="secondary" className="font-mono text-[10px]">
-            {filtered.length}/{PLANTS.length}
-          </Badge>
         </div>
 
         <div className="relative">
