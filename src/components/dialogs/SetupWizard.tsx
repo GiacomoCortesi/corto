@@ -186,22 +186,32 @@ export function SetupWizard({ open, onComplete }: Props) {
           )}
         </div>
 
-        <DialogFooter className="sm:justify-between">
+        <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
           {step > 0 ? (
-            <Button variant="ghost" size="sm" onClick={handleBack}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleBack}
+              className="w-full sm:w-auto justify-center sm:justify-start"
+            >
               <ArrowLeft className="size-4" />
               Indietro
             </Button>
           ) : (
-            <span />
+            <span className="hidden sm:block" />
           )}
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 w-full sm:w-auto">
             {step === 2 && !location ? (
-              <Button variant="ghost" size="sm" onClick={finish}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={finish}
+                className="w-full sm:w-auto justify-center"
+              >
                 Salta
               </Button>
             ) : null}
-            <Button onClick={handleNext} size="sm">
+            <Button onClick={handleNext} size="sm" className="w-full sm:w-auto justify-center">
               {nextLabels[step]}
               <ArrowRight className="size-4" />
             </Button>

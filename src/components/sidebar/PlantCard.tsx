@@ -8,11 +8,13 @@ import { cellSizeForCatalog, perCellLabelForCellSize } from "@/lib/utils/spacing
 import type { Plant } from "@/lib/types";
 import { Sun, CloudSun, CloudMoon, Droplet, Droplets } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { toast } from "sonner";
 
 type Props = {
   plant: Plant;
@@ -41,6 +43,36 @@ export function PlantCard({ plant, index, outOfSeason }: Props) {
   const perCellLabel = useGardenStore((s) =>
     perCellLabelForCellSize(plant, cellSizeForCatalog(s.beds, s.selection)),
   );
+
+  const quickAdd = React.useCallback(() => {
+    const state = useGardenStore.getState();
+    const selectedBedId = state.selection?.kind === "bed" ? state.selection.bedId : undefined;
+    let bedId = selectedBedId ?? state.beds[0]?.id;
+
+    if (!bedId) {
+      bedId = state.addBed();
+    }
+
+    const bed = useGardenStore.getState().beds.find((b) => b.id === bedId);
+    if (!bed) return;
+
+    const total = bed.cols * bed.rows;
+    for (let cellIndex = 0; cellIndex < total; cellIndex++) {
+      const placed = useGardenStore.getState().addPlantToBed(bedId, plant.id, cellIndex);
+      if (placed) {
+        toast.success(`${plant.emoji} ${plant.name} piantato`, {
+          description: "Aggiunto con un tap (drag & drop resta disponibile).",
+          duration: 1600,
+        });
+        return;
+      }
+    }
+
+    toast.error("Nessuno spazio libero", {
+      description: "Non ho trovato una cella disponibile in cui far entrare la pianta.",
+      duration: 2200,
+    });
+  }, [plant.emoji, plant.id, plant.name]);
 
   const SunIcon = SUN_ICON[plant.sun];
   const calendarMonth = new Date().getMonth() + 1;
@@ -145,6 +177,23 @@ export function PlantCard({ plant, index, outOfSeason }: Props) {
               ? "utilizzabile ora"
               : "non ora"}
         </span>
+      </div>
+
+      {/* Mobile fallback when drag is hard to use */}
+      <div className="mt-3 sm:hidden">
+        <Button
+          type="button"
+          size="sm"
+          className="w-full justify-center"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            quickAdd();
+          }}
+          disabled={isDragging}
+        >
+          Tocca per aggiungere
+        </Button>
       </div>
     </div>
   );

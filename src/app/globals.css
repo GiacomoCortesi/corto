@@ -259,6 +259,51 @@ html.lenis body {
   animation: fade-in-up 200ms ease-out both;
 }
 
+/* Landing hero: floating produce (lightweight, emoji-only) ---------------- */
+.produce-hero-mask {
+  background:
+    radial-gradient(1200px 420px at 65% 20%, color-mix(in oklab, var(--primary) 10%, transparent), transparent 55%),
+    radial-gradient(900px 520px at 22% 60%, color-mix(in oklab, var(--sage) 14%, transparent), transparent 60%),
+    linear-gradient(to bottom, transparent, rgba(0,0,0,0.02), transparent);
+  mask-image: linear-gradient(to bottom, transparent, black 12%, black 88%, transparent);
+}
+
+.produce-hero-blob {
+  background:
+    radial-gradient(420px 320px at 55% 40%, color-mix(in oklab, var(--primary) 22%, transparent), transparent 70%),
+    radial-gradient(520px 420px at 32% 70%, color-mix(in oklab, var(--sky) 18%, transparent), transparent 72%),
+    radial-gradient(500px 360px at 78% 78%, color-mix(in oklab, var(--terracotta) 12%, transparent), transparent 74%);
+  filter: blur(18px);
+  opacity: 0.9;
+}
+
+@keyframes produce-float-a {
+  0% { transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(-2deg) scale(var(--p-scale, 1)); }
+  50% { transform: translate(-50%, -50%) translate3d(0, -14px, 0) rotate(6deg) scale(var(--p-scale, 1)); }
+  100% { transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(-2deg) scale(var(--p-scale, 1)); }
+}
+@keyframes produce-float-b {
+  0% { transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(3deg) scale(var(--p-scale, 1)); }
+  50% { transform: translate(-50%, -50%) translate3d(10px, -10px, 0) rotate(-5deg) scale(var(--p-scale, 1)); }
+  100% { transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(3deg) scale(var(--p-scale, 1)); }
+}
+@keyframes produce-float-c {
+  0% { transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(0deg) scale(var(--p-scale, 1)); }
+  50% { transform: translate(-50%, -50%) translate3d(-10px, -16px, 0) rotate(7deg) scale(var(--p-scale, 1)); }
+  100% { transform: translate(-50%, -50%) translate3d(0, 0, 0) rotate(0deg) scale(var(--p-scale, 1)); }
+}
+
+.produce-float-a,
+.produce-float-b,
+.produce-float-c {
+  animation-timing-function: cubic-bezier(0.42, 0, 0.58, 1);
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+.produce-float-a { animation-name: produce-float-a; }
+.produce-float-b { animation-name: produce-float-b; }
+.produce-float-c { animation-name: produce-float-c; }
+
 /* Custom scrollbars (subtle) */
 .subtle-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
 .subtle-scroll::-webkit-scrollbar-thumb {

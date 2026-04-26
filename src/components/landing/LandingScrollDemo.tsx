@@ -17,6 +17,7 @@ import {
   BrainCircuit,
 } from "lucide-react";
 import { DemoGrid } from "@/components/landing/DemoGrid";
+import { FloatingProduceHero } from "@/components/landing/FloatingProduceHero";
 import { cn } from "@/lib/utils";
 
 type Step = {
@@ -185,7 +186,7 @@ export function LandingScrollDemo() {
       <main>
         <section className="mx-auto max-w-6xl px-6 pt-12 pb-6">
           <div className="grid lg:grid-cols-12 gap-10 items-start">
-            <div className="lg:col-span-7">
+            <div className="lg:col-span-6">
               <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
                 Pianifica l’orto. <span className="text-primary">Senza fogli, senza caos.</span>
               </h1>
@@ -200,6 +201,9 @@ export function LandingScrollDemo() {
               </div>
             </div>
 
+            <div className="hidden lg:block lg:col-span-6">
+              <FloatingProduceHero className="h-[320px] xl:h-[360px] w-[calc(100%+3rem)] -ml-6" />
+            </div>
           </div>
         </section>
 
@@ -250,7 +254,7 @@ export function LandingScrollDemo() {
                           {s.body}
                         </p>
 
-                        <div className="mt-5 flex items-center gap-2">
+                        <div className="mt-5 hidden sm:flex items-center gap-2">
                           <button
                             type="button"
                             className={buttonVariants({ size: "sm", variant: "secondary" })}
@@ -308,6 +312,28 @@ export function LandingScrollDemo() {
               </div>
             </div>
           </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-6 py-16">
+          <Card className="border-primary/15 bg-card/60">
+            <div className="px-6 py-10 sm:px-10 sm:py-12 text-center">
+              <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground">
+                Pronto a iniziare?
+              </div>
+              <div className="mt-2 text-2xl sm:text-3xl font-semibold tracking-tight">
+                Porta tutto nel planner
+              </div>
+              <p className="mt-3 text-sm sm:text-[15px] text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                Crea le aiuole, trascina le piante e ottieni suggerimenti: in pochi minuti hai una
+                vista completa del tuo orto.
+              </p>
+              <div className="mt-6 flex justify-center">
+                <Link href="/app" className={buttonVariants({ size: "lg", variant: "default" })}>
+                  Inizia ora <ArrowRight className="ml-1.5 size-4" />
+                </Link>
+              </div>
+            </div>
+          </Card>
         </section>
       </main>
     </div>

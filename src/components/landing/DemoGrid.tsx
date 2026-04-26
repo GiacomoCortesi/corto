@@ -238,8 +238,8 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
 
       {/* Step 3: companion info card (like the app) */}
       {step === 2 ? (
-        <div className="pointer-events-none absolute -right-3 -bottom-3">
-          <div className="w-[340px] max-w-[72vw] rounded-2xl border bg-card/88 backdrop-blur px-4 py-4 shadow-sm ring-1 ring-primary/10 fade-in-up">
+        <div className="pointer-events-none mt-4 sm:mt-0 sm:absolute sm:-right-3 sm:-bottom-3">
+          <div className="mx-auto sm:mx-0 w-full max-w-[92vw] sm:w-[340px] sm:max-w-[72vw] rounded-2xl border bg-card/88 backdrop-blur px-4 py-4 shadow-sm ring-1 ring-primary/10 fade-in-up">
             <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-primary/70">
               Vicinato
             </div>
@@ -375,8 +375,8 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
 
       {/* Step 5: real Suggestions UI example */}
       {step === 4 ? (
-        <div className="pointer-events-none absolute -right-3 -bottom-3">
-          <div className="w-[360px] max-w-[78vw] rounded-2xl border bg-card/88 backdrop-blur px-4 py-4 shadow-sm ring-1 ring-primary/10 fade-in-up">
+        <div className="pointer-events-none mt-4 sm:mt-0 sm:absolute sm:-right-3 sm:-bottom-3">
+          <div className="mx-auto sm:mx-0 w-full max-w-[92vw] sm:w-[360px] sm:max-w-[78vw] rounded-2xl border bg-card/88 backdrop-blur px-4 py-4 shadow-sm ring-1 ring-primary/10 fade-in-up">
             <div className="flex items-start gap-2">
               <div className="size-9 rounded-lg bg-primary/10 text-primary grid place-items-center shrink-0">
                 <span className="text-base">✨</span>
