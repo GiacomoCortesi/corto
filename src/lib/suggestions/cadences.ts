@@ -1,16 +1,16 @@
 /**
- * Cadenze indicative per le attività di orto in clima temperato (es.
- * Italia). Servono al prompt per dare al modello dei numeri concreti
- * da considerare invece di farglieli inventare. Sono linee guida, non
- * certezze: il modello deve modulare in base a meteo, stagione e specie.
+ * Indicative cadences for garden activities in a temperate climate (e.g. Italy).
+ * Used by the prompt to give the model concrete numbers to consider instead of
+ * making them up. These are guidelines, not certainties: the model should adapt
+ * based on weather, season, and species.
  */
 
 import type { PlantCategory, GardenActivityKind } from "@/lib/types";
 
 type CadenceWindow = {
-  /** Cadenza tipica in giorni per quel tipo di attività */
+  /** Typical cadence in days for that activity kind */
   everyDays: number;
-  /** Tolleranza ammessa (giorni) prima/dopo `everyDays` */
+  /** Allowed tolerance (days) before/after `everyDays` */
   toleranceDays: number;
 };
 
@@ -19,16 +19,15 @@ type Cadences = Partial<
 >;
 
 /**
- * Cadenze "in piena stagione" per categoria di pianta.
+ * "Peak season" cadences by plant category.
  *
- * - Sarchiatura/diserbo (`weeding`): operazione ricorrente per evitare
- *   competizione e crosta superficiale.
- * - Annaffiatura (`watering`): in piena estate; in primavera/autunno
- *   l'LLM deve raddoppiare i giorni e considerare la pioggia prevista.
- * - Trattamento (`treatment`): cadenza preventiva tipica per le specie
- *   piu' soggette ad avversità (solanacee, cucurbitacee, cavoli).
+ * - Weeding (`weeding`): recurring operation to reduce competition and surface crusting.
+ * - Watering (`watering`): in midsummer; in spring/autumn the LLM should
+ *   roughly double the days and consider forecast rain.
+ * - Treatment (`treatment`): typical preventive cadence for species more prone
+ *   to issues (solanaceae, cucurbits, cabbages).
  *
- * Le specie a cui non si applica un'attività vengono semplicemente omesse.
+ * Species for which an activity doesn't apply are simply omitted.
  */
 export const CATEGORY_CADENCES: Cadences = {
   ortaggio: {
@@ -65,8 +64,8 @@ export const CATEGORY_CADENCES: Cadences = {
 };
 
 /**
- * Resa testuale compatta da iniettare nel prompt: una riga per categoria
- * con le cadenze in giorni, cosi' il modello può citarle nel rationale.
+ * Compact textual rendering to inject into the prompt: one line per category
+ * with cadences in days, so the model can cite them in the rationale.
  */
 export function formatCadencesForPrompt(): string {
   const lines: string[] = [];

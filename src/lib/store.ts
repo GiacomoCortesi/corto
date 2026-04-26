@@ -42,11 +42,11 @@ export const PERSIST_VERSION = 5;
 type State = {
   meta: GardenMeta;
   beds: Bed[];
-  /** Diario attività (separato dallo snapshot undo del layout) */
+  /** Activity log (separate from the layout undo snapshot) */
   events: GardenActivity[];
-  /** Id dei suggerimenti che l'utente ha esplicitamente ignorato */
+  /** IDs of suggestions the user explicitly dismissed */
   dismissedSuggestionIds: string[];
-  /** Ultima risposta suggerimenti (cache persistita) */
+  /** Last suggestions response (persisted cache) */
   cachedSuggestions?: {
     items: Suggestion[];
     weatherSummary?: string;
@@ -88,57 +88,56 @@ type Actions = {
   renameBed: (id: string, name: string) => void;
   resizeBed: (id: string, cols: number, rows: number) => void;
   /**
-   * Cambia la risoluzione della griglia preservando le dimensioni
-   * fisiche dell'aiuola in cm. Riscala `cols`/`rows` e l'`anchor` di
-   * ogni patch al nuovo passo. I patch che dopo il riscalamento non
-   * stanno piu' nella griglia (oppure entrano in collisione fra loro
-   * dopo l'arrotondamento) vengono scartati. Restituisce il numero di
-   * patch scartati (0 = riscalamento perfetto).
+   * Changes grid resolution while preserving the bed's physical size in cm.
+   * Rescales `cols`/`rows` and each patch `anchor` to the new step. Patches
+   * that no longer fit in the grid after rescaling (or that collide with each
+   * other after rounding) are dropped. Returns the number of dropped patches
+   * (0 = perfect rescale).
    */
   setBedCellSize: (id: string, cellSizeCm: number) => number;
 
   addPatch: (bedId: string, input: AddPatchInput) => PlantPatch | null;
   removePatch: (bedId: string, patchId: string) => void;
-  /** Ridimensiona il patch. Restituisce `false` se la modifica e' stata
-   *  rifiutata (overlap o overflow del bed). */
+  /** Resizes the patch. Returns `false` if the change was rejected
+   *  (overlap or bed overflow). */
   resizePatch: (
     bedId: string,
     patchId: string,
     plantCols: number,
     plantRows: number,
   ) => boolean;
-  /** Sposta il patch. Restituisce `false` se la nuova posizione e' invalida. */
+  /** Moves the patch. Returns `false` if the new position is invalid. */
   movePatch: (
     bedId: string,
     patchId: string,
     anchor: { col: number; row: number },
   ) => boolean;
-  /** Cambia (o azzera) la spaziatura del patch. Restituisce `false` se rifiutata. */
+  /** Changes (or resets) patch spacing. Returns `false` if rejected. */
   setPatchSpacing: (
     bedId: string,
     patchId: string,
     spacingCm: number | undefined,
   ) => boolean;
-  /** Cambia (o azzera) la convenzione di spaziatura. Restituisce `false` se rifiutata. */
+  /** Changes (or resets) the spacing convention. Returns `false` if rejected. */
   setPatchSpacingMode: (
     bedId: string,
     patchId: string,
     spacingMode: SpacingMode | undefined,
   ) => boolean;
-  /** Cambia (o azzera) la disposizione (square/triangular). Restituisce `false` se rifiutata. */
+  /** Changes (or resets) the arrangement (square/triangular). Returns `false` if rejected. */
   setPatchArrangement: (
     bedId: string,
     patchId: string,
     arrangement: PatchArrangement | undefined,
   ) => boolean;
 
-  /** Wrapper retro-compatibile: crea un patch 1x1 sulla cella indicata. */
+  /** Backward-compatible wrapper: creates a 1x1 patch on the given cell. */
   addPlantToBed: (
     bedId: string,
     plantId: string,
     cellIndex: number,
   ) => PlantPatch | null;
-  /** Wrapper retro-compatibile: equivalente a `removePatch`. */
+  /** Backward-compatible wrapper: equivalent to `removePatch`. */
   removePlantInstance: (bedId: string, instanceId: string) => void;
 
   setSelection: (selection: Selection) => void;
@@ -147,20 +146,20 @@ type Actions = {
   addActivity: (input: AddActivityInput) => void;
   removeActivity: (id: string) => void;
   /**
-   * Aggiorna un'attività esistente. Restituisce `false` se non esiste.
-   * Usato dal Diario per segnare un'attività pianificata come fatta
-   * (sposta `at` ad ora e rimuove `planned`).
+   * Updates an existing activity. Returns `false` if it doesn't exist.
+   * Used by the Log to mark a planned activity as done (moves `at` to now and
+   * removes `planned`).
    */
   updateActivity: (id: string, patch: Partial<Omit<GardenActivity, "id">>) => boolean;
 
   /**
-   * Accetta un suggerimento: crea un'attività pianificata con `at`
-   * pari a `suggestedFor` e la marca come `planned: true`.
+   * Accepts a suggestion: creates a planned activity with `at` equal to
+   * `suggestedFor` and marks it as `planned: true`.
    */
   acceptSuggestion: (s: Suggestion) => void;
-  /** Marca un suggerimento come ignorato (persistito) */
+  /** Marks a suggestion as dismissed (persisted) */
   dismissSuggestion: (id: string) => void;
-  /** Salva (persistendo) l'ultima risposta suggerimenti */
+  /** Saves (persisting) the last suggestions response */
   setCachedSuggestions: (cache: State["cachedSuggestions"] | undefined) => void;
 
   undo: () => void;
@@ -201,10 +200,10 @@ function pushHistory(state: State): Pick<State, "past" | "future"> {
 }
 
 /**
- * Helper condiviso da `resizePatch`/`movePatch`/`setPatchSpacing`/...
- * Applica `update` al patch, valida fit + overlap nel bed e aggiorna lo
- * store. Restituisce `true` se la modifica e' stata applicata, `false` se
- * rifiutata (overlap, overflow, oggetti mancanti).
+ * Helper shared by `resizePatch`/`movePatch`/`setPatchSpacing`/...
+ * Applies `update` to the patch, validates fit + overlap in the bed, and
+ * updates the store. Returns `true` if applied, `false` if rejected (overlap,
+ * overflow, missing objects).
  */
 function applyPatchUpdate(
   get: () => GardenStore,
@@ -307,7 +306,7 @@ export const useGardenStore = create<GardenStore>()(
           meta: location
             ? { ...state.meta, location }
             : (() => {
-                // Rimuove location senza lasciare la chiave a undefined nei JSON.
+                // Removes location without leaving the key as undefined in JSON.
                 const next = { ...state.meta };
                 delete next.location;
                 return next;
@@ -318,10 +317,9 @@ export const useGardenStore = create<GardenStore>()(
       addBed: (position) => {
         const state = get();
         const id = uid("bed");
-        // Default a 5 cm di risoluzione cosi' i footprint dei patch
-        // (es. carota 8 cm, lattuga 20 cm) si allineano in modo
-        // accurato sulla griglia. 24 x 24 = 1.20 m x 1.20 m, stessa
-        // dimensione visiva del vecchio default 4 x 4 a 30 cm.
+        // Default to 5 cm resolution so patch footprints (e.g. carrot 8 cm,
+        // lettuce 20 cm) align accurately to the grid. 24 x 24 = 1.20 m x 1.20 m,
+        // the same visual size as the old default 4 x 4 at 30 cm.
         const newBed: Bed = {
           id,
           name: `Aiuola ${state.beds.length + 1}`,

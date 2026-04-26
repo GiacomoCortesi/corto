@@ -77,8 +77,8 @@ function isPlantInSeasonBetween(p: Plant, startMonth: number, endMonth: number):
 }
 
 function isCompatibleWithSunWater(current: Plant, candidate: Plant): boolean {
-  // Non blocchiamo per sole/acqua (orto domestico), ma penalizziamo mismatch forti.
-  // Qui solo “hard” per evitare suggerimenti chiaramente opposti.
+  // We don't strictly block on sun/water (home garden), but we do block hard
+  // mismatches to avoid obviously wrong suggestions.
   if (current.sun === "shade" && candidate.sun === "full") return false;
   return true;
 }
@@ -91,8 +91,8 @@ function buildHistory(
   const currentPlant = plantById(patch.plantId);
   if (!currentPlant) return null;
 
-  // Approssimazione: usiamo gli eventi dell'aiuola con plantId per ricostruire famiglie “recenti”.
-  // Non abbiamo una storia di sostituzioni patch, quindi è volutamente semplice.
+  // Approximation: use bed events with plantId to reconstruct "recent" families.
+  // We don't track patch replacement history, so this is intentionally simple.
   const bedEvents = events.filter((e) => e.bedId === bed.id && e.plantId);
   const familyByPlantId = (pid: string) => {
     const p = plantById(pid);
@@ -111,7 +111,7 @@ function buildHistory(
   recentFamilies.sort((a, b) => b.lastSeenMs - a.lastSeenMs);
 
   const lastDemand = (() => {
-    // Prendiamo l'evento più recente con plantId (sull'aiuola) e leggiamo demand.
+    // Take the most recent event with plantId (in the bed) and read its demand.
     const last = bedEvents.sort((a, b) => b.at - a.at)[0];
     const p = last?.plantId ? plantById(last.plantId) : null;
     return p ? plantDemand(p) : null;
@@ -126,7 +126,7 @@ export function scoreCandidatesForPatch(args: {
   events: GardenActivity[];
   allPlantIds: string[];
   ctx: RotationContext;
-  /** Per evitare consociazioni negative immediate: plantIds dei patch vicini (opzionale). */
+  /** To avoid immediate bad companionships: plantIds of nearby patches (optional). */
   neighborPlantIds?: string[];
 }): RotationCandidate[] {
   const { bed, patch, events, allPlantIds, ctx, neighborPlantIds } = args;
@@ -149,8 +149,8 @@ export function scoreCandidatesForPatch(args: {
     if (!cand) continue;
     if (pid === currentPlant.id) continue;
 
-    // Stagionalità: accettiamo se è “in stagione” in QUALSIASI mese tra ora e l'orizzonte.
-    // (Usare solo nowMonth/horizonMonth rende i candidati troppo pochi e distorti.)
+    // Seasonality: accept if it's "in season" in ANY month between now and the horizon.
+    // (Using only nowMonth/horizonMonth makes candidates too few and biased.)
     const inSeason = isPlantInSeasonBetween(cand, nowMonth, horizonMonth);
     if (!inSeason) continue;
 
@@ -160,7 +160,7 @@ export function scoreCandidatesForPatch(args: {
     const reasons: string[] = [];
     const tradeoffs: string[] = [];
 
-    // Rotazione per famiglia/gruppo: evitare uguali.
+    // Rotation by family/group: avoid repeats.
     const candFamily = plantFamily(cand);
     const candGroup = plantGroup(cand);
 
@@ -175,7 +175,7 @@ export function scoreCandidatesForPatch(args: {
       reasons.push("Cambia famiglia/gruppo rispetto alla coltura attuale.");
     }
 
-    // Break years: se la famiglia è apparsa recentemente nell'aiuola, penalizza.
+    // Break years: if the family appeared recently in the bed, penalize.
     if (candFamily && history?.recentFamilies?.length) {
       const seen = history.recentFamilies.find((x) => x.family === candFamily);
       const breakYears = cand.rotationBreakYears ?? 0;
@@ -188,7 +188,7 @@ export function scoreCandidatesForPatch(args: {
       }
     }
 
-    // Domanda nutritiva: evitare “high -> high”, favorire azotofissatrici dopo high.
+    // Nutrient demand: avoid “high -> high”, favor nitrogen-fixers after high.
     const candDemand = plantDemand(cand);
     if (currentDemand === "high" && candDemand === "high") {
       score -= 15;
@@ -214,7 +214,7 @@ export function scoreCandidatesForPatch(args: {
       reasons.push("Successione: coltura da foglia/da taglio dopo foglia (gestione scalare).");
     }
 
-    // Companions/antagonists: usa solo neighbor set (se disponibile).
+    // Companions/antagonists: use the neighbor set only (if provided).
     if (neighborSet.size > 0) {
       const bad =
         cand.antagonists?.filter((x) => neighborSet.has(x.plantId)) ?? [];
@@ -230,7 +230,7 @@ export function scoreCandidatesForPatch(args: {
       }
     }
 
-    // Se la pianta non ha metadati di rotazione, penalizza leggermente (incertezza).
+    // If the plant lacks rotation metadata, penalize slightly (uncertainty).
     if (!cand.cropFamily && !cand.rotationGroup) {
       score -= 5;
       tradeoffs.push("Metadati di rotazione incompleti: raccomandazione meno robusta.");

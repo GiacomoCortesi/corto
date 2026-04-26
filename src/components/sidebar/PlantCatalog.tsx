@@ -31,7 +31,11 @@ export function PlantCatalog() {
   );
 }
 
-export function PlantCatalogContent() {
+export function PlantCatalogContent({
+  scrollMode = "scroll-area",
+}: {
+  scrollMode?: "scroll-area" | "native";
+}) {
   const seasonFilter = useGardenStore((s) => s.seasonFilter);
   const [query, setQuery] = React.useState("");
   const [category, setCategory] = React.useState<Category>("all");
@@ -97,27 +101,51 @@ export function PlantCatalogContent() {
         </div>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="p-3 space-y-2">
-          {filtered.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border p-6 text-center">
-              <Sprout className="size-5 text-muted-foreground mx-auto mb-2" />
-              <p className="text-xs text-muted-foreground">
-                Nessuna pianta corrisponde ai filtri.
-              </p>
-            </div>
-          ) : (
-            filtered.map((p, i) => (
-              <PlantCard
-                key={p.id}
-                plant={p}
-                index={i}
-                outOfSeason={seasonFilter !== null && !plantActiveInMonth(p, seasonFilter)}
-              />
-            ))
-          )}
+      {scrollMode === "native" ? (
+        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y">
+          <div className="p-3 space-y-2">
+            {filtered.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-6 text-center">
+                <Sprout className="size-5 text-muted-foreground mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">
+                  Nessuna pianta corrisponde ai filtri.
+                </p>
+              </div>
+            ) : (
+              filtered.map((p, i) => (
+                <PlantCard
+                  key={p.id}
+                  plant={p}
+                  index={i}
+                  outOfSeason={seasonFilter !== null && !plantActiveInMonth(p, seasonFilter)}
+                />
+              ))
+            )}
+          </div>
         </div>
-      </ScrollArea>
+      ) : (
+        <ScrollArea className="flex-1">
+          <div className="p-3 space-y-2">
+            {filtered.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-6 text-center">
+                <Sprout className="size-5 text-muted-foreground mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground">
+                  Nessuna pianta corrisponde ai filtri.
+                </p>
+              </div>
+            ) : (
+              filtered.map((p, i) => (
+                <PlantCard
+                  key={p.id}
+                  plant={p}
+                  index={i}
+                  outOfSeason={seasonFilter !== null && !plantActiveInMonth(p, seasonFilter)}
+                />
+              ))
+            )}
+          </div>
+        </ScrollArea>
+      )}
     </>
   );
 }

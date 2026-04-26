@@ -1,9 +1,9 @@
 /**
  * POST /api/evolution-plan
  *
- * Genera un piano evolutivo/rotazioni per i prossimi N mesi.
- * Riusa Open-Meteo (best effort) e OpenAI Chat Completions con
- * response_format JSON schema strict.
+ * Generates an evolution/rotation plan for the next N months.
+ * Reuses Open-Meteo (best effort) and OpenAI Chat Completions with strict
+ * JSON-schema response_format.
  */
 
 import type { NextRequest } from "next/server";
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const strategy =
     body.strategy === "soilRecovery" || body.strategy === "production" ? body.strategy : "balanced";
 
-  // 1) Meteo (best effort)
+  // 1) Weather (best effort)
   let weatherSummary: string | null = null;
   const loc = body.snapshot.meta.location;
   if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest): Promise<Response> {
     if (f && f.days.length > 0) weatherSummary = summarizeForecast(f);
   }
 
-  // 2) Contesto (include candidati deterministici + score)
+  // 2) Context (includes deterministic candidates + scores)
   const built = buildEvolutionContext({
     snapshot: body.snapshot,
     weatherSummary,

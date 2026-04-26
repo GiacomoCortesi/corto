@@ -1,7 +1,7 @@
 /**
- * Prompt e schema JSON per la generazione di suggerimenti di orto.
- * Ogni blocco e' per TIPO di attività (`kind`), con un elenco `items`
- * che valuta ogni pianta/patch (serve o no, con motivazione).
+ * Prompt and JSON schema for generating garden suggestions.
+ * Each block is for an activity TYPE (`kind`), with an `items` list that
+ * evaluates every plant/patch (needed or not, with rationale).
  */
 
 import { formatCadencesForPrompt } from "@/lib/suggestions/cadences";

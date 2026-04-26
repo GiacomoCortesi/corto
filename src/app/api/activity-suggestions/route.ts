@@ -1,13 +1,13 @@
 /**
  * POST /api/activity-suggestions
  *
- * Genera suggerimenti deterministici (no LLM) per:
- * - innaffiatura
- * - sarchiatura
- * - fertilizzante
+ * Generates deterministic suggestions (no LLM) for:
+ * - watering
+ * - weeding
+ * - fertilizer
  *
- * Se l'utente ha inserito una posizione (`snapshot.meta.location`), usiamo
- * ESATTAMENTE quelle coordinate (lat/lon) per il meteo via Open-Meteo.
+ * If the user provided a location (`snapshot.meta.location`), we use EXACTLY
+ * those coordinates (lat/lon) to fetch weather via Open-Meteo.
  */
 
 import type { NextRequest } from "next/server";
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const plantIds = plantsInSnapshot(body.snapshot);
   const events = toActivityEvents(body.snapshot.events ?? []);
 
-  // Meteo: usa coordinate ESATTE se presenti.
+  // Weather: use EXACT coordinates if present.
   let weather:
     | { previous7d: { rainMm: number; avgTempC?: number }; next3d: { rainMm: number; avgTempC?: number } }
     | undefined;

@@ -1,10 +1,10 @@
 /**
- * Wrapper minimo su Open-Meteo (https://open-meteo.com): API gratuita,
- * senza chiave, usata dal motore suggerimenti per ragionare su pioggia,
- * temperature massime/minime, evapotraspirazione e gelate dei prossimi
- * 14 giorni.
+ * Minimal wrapper around Open-Meteo (https://open-meteo.com): a free,
+ * no-key API used by the suggestions engine to reason about rain,
+ * max/min temperatures, evapotranspiration, and frost over the next
+ * 14 days.
  *
- * Nessuna dipendenza esterna: solo `fetch` lato server.
+ * No external dependencies: server-side `fetch` only.
  */
 
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
@@ -24,7 +24,7 @@ export type ForecastDay = {
   tMin: number | null;
   precipMm: number | null;
   precipProb: number | null;
-  /** Evapotraspirazione potenziale FAO-56 (mm/giorno) */
+  /** FAO-56 reference evapotranspiration (mm/day) */
   et0: number | null;
   weatherCode: number | null;
 };
@@ -56,9 +56,9 @@ function pickAt<T>(arr: T[] | undefined, i: number): T | null {
 }
 
 /**
- * Recupera fino a `forecastDays` (max 16) di previsioni giornaliere per
- * la posizione indicata. Restituisce `null` su errore di rete / parsing
- * cosi' il chiamante puo' degradare con grazia (suggerimenti senza meteo).
+ * Fetches up to `forecastDays` (max 16) daily forecasts for the given
+ * location. Returns `null` on network/parsing errors so the caller can
+ * degrade gracefully (suggestions without weather).
  */
 export async function fetchForecast(
   lat: number,
@@ -108,8 +108,8 @@ export async function fetchForecast(
 }
 
 /**
- * Variante che include anche uno storico dei giorni precedenti (Open-Meteo
- * supporta `past_days` sulla stessa endpoint forecast).
+ * Variant that also includes a history of previous days (Open-Meteo
+ * supports `past_days` on the same forecast endpoint).
  */
 export async function fetchForecastWithPastDays(
   lat: number,
@@ -165,19 +165,19 @@ export async function fetchForecastWithPastDays(
 const WEEKDAY_IT = ["dom", "lun", "mar", "mer", "gio", "ven", "sab"] as const;
 
 function weekday(date: string): string {
-  // "YYYY-MM-DD" -> usa UTC per evitare drift di timezone
+  // "YYYY-MM-DD" -> use UTC to avoid timezone drift
   const d = new Date(`${date}T00:00:00Z`);
   return WEEKDAY_IT[d.getUTCDay()];
 }
 
 /**
- * Comprime la previsione in poche righe leggibili dall'LLM (e dall'utente).
- * Esempio:
- *   "Prossimi 14 gg @ Europe/Rome:
- *    - Pioggia totale ~12 mm distribuita su 4 gg (max 8 mm il mer 30/04).
- *    - Temperature: max 14-28°C, min 8-18°C.
- *    - ET0 media ~3.4 mm/g (asciutto).
- *    - Nessuna gelata prevista."
+ * Compresses the forecast into a few lines readable by the LLM (and by users).
+ * Example:
+ *   "Next 14 days @ Europe/Rome:
+ *    - Total rain ~12 mm over 4 days (peak 8 mm on Wed 30/04).
+ *    - Temperatures: max 14-28°C, min 8-18°C.
+ *    - Mean ET0 ~3.4 mm/day (dry).
+ *    - No frost expected."
  */
 export function summarizeForecast(f: Forecast): string {
   if (f.days.length === 0) return "Nessuna previsione disponibile.";
@@ -219,7 +219,7 @@ export function summarizeForecast(f: Forecast): string {
 
   if (tMaxes.length && tMins.length) {
     lines.push(
-      `- Temperature: max ${minOf(tMaxes).toFixed(0)}-${maxOf(tMaxes).toFixed(0)}°C, min ${minOf(tMins).toFixed(0)}-${maxOf(tMins).toFixed(0)}°C.`,
+      `- Temperatures: max ${minOf(tMaxes).toFixed(0)}-${maxOf(tMaxes).toFixed(0)}°C, min ${minOf(tMins).toFixed(0)}-${maxOf(tMins).toFixed(0)}°C.`,
     );
   }
 

@@ -1,7 +1,7 @@
 /**
- * Wrapper su Open-Meteo Geocoding API (https://open-meteo.com/en/docs/geocoding-api).
- * Nessuna API key richiesta. Usato dal Setup Wizard / location editor per
- * trovare lat/lon a partire da un nome di città o località.
+ * Wrapper around the Open-Meteo Geocoding API (https://open-meteo.com/en/docs/geocoding-api).
+ * No API key required. Used by the Setup Wizard / location editor to find
+ * lat/lon from a city/place name.
  */
 
 const GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search";
@@ -10,7 +10,7 @@ export type GeocodeResult = {
   name: string;
   countryCode?: string;
   country?: string;
-  admin1?: string; // es. "Emilia-Romagna"
+  admin1?: string; // e.g. "Emilia-Romagna"
   lat: number;
   lon: number;
   timezone?: string;
@@ -29,9 +29,9 @@ type RawGeocodeResponse = {
 };
 
 /**
- * Cerca fino a `count` località che matchano `query`. Restituisce un
- * array vuoto se la query e' troppo corta o se la rete fallisce — il
- * chiamante deve gestire l'empty state senza esplodere.
+ * Searches up to `count` locations matching `query`. Returns an empty array
+ * if the query is too short or the network fails — the caller must handle the
+ * empty state gracefully.
  */
 export async function geocode(
   query: string,
@@ -79,7 +79,7 @@ export async function geocode(
     }));
 }
 
-/** Etichetta leggibile da mostrare nell'UI. */
+/** Human-readable label to display in the UI. */
 export function geocodeLabel(r: GeocodeResult): string {
   const parts = [r.name];
   if (r.admin1 && r.admin1 !== r.name) parts.push(r.admin1);

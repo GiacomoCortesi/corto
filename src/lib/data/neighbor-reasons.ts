@@ -1,8 +1,8 @@
 import type { PlantNeighborEntry } from "@/lib/types";
 
 /**
- * Nomi mostrati per le voci di consociazione (include specie citate solo come
- * compagne/antagoniste e non presenti come piante piazzabili).
+ * Display names for companion entries (includes species mentioned only as
+ * companions/antagonists and not available as placeable plants).
  */
 export const NEIGHBOR_LABELS: Record<string, string> = {
   aglio: "Aglio",

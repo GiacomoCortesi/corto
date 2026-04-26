@@ -234,9 +234,9 @@ const DEMAND_LABELS: Record<FertilizerDemand, string> = {
 };
 
 /**
- * Stile (background, testo, bordo) del badge "demand" della concimazione.
- * Volutamente legato ai token CSS del tema (non hex hardcoded) per
- * coerenza con il resto del pannello.
+ * Styling (background, text, border) for the fertilizer "demand" badge.
+ * Intentionally tied to theme CSS tokens (no hardcoded hex values) for
+ * consistency with the rest of the panel.
  */
 function demandBadgeClass(demand: FertilizerDemand): string {
   switch (demand) {
@@ -252,9 +252,9 @@ function demandBadgeClass(demand: FertilizerDemand): string {
 }
 
 /**
- * Sezione collassabile usata per "Concimazione" e "Avversità & rimedi".
- * Il summary è sempre visibile e include un'azione di anteprima opzionale
- * (es. il badge demand per la concimazione) renderizzata a destra.
+ * Collapsible section used for "Fertilization" and "Issues & remedies".
+ * The summary is always visible and can include an optional preview action
+ * (e.g. the demand badge for fertilization) rendered on the right.
  */
 function CollapsibleSection({
   icon,
@@ -301,8 +301,8 @@ function CollapsibleSection({
 }
 
 /**
- * Lista compatta a bullet con tipografia coerente con il resto del
- * pannello. Pensata per pochi item (max ~6), non per lunghi elenchi.
+ * Compact bulleted list with typography consistent with the rest of the panel.
+ * Intended for a few items (max ~6), not long lists.
  */
 function BulletList({ items }: { items: string[] }) {
   if (items.length === 0) {
@@ -318,9 +318,9 @@ function BulletList({ items }: { items: string[] }) {
 }
 
 /**
- * Mostra concimazione e avversità/rimedi della pianta in due blocchi
- * collassabili. Ogni blocco è opzionale: se i dati non sono presenti
- * nel catalogo per la voce, il blocco non viene renderizzato.
+ * Shows plant fertilization and issues/remedies in two collapsible blocks.
+ * Each block is optional: if the data isn't present in the catalog entry,
+ * the block isn't rendered.
  */
 function PlantCareInfo({ plant }: { plant: Plant }) {
   const fert = plant.fertilizer;
@@ -1172,9 +1172,8 @@ function EmptyState({ title, body }: { title: string; body?: string }) {
 }
 
 /**
- * Stato di "nessuna selezione" della pannellatura Proprietà: mostra
- * informazioni e impostazioni dell'orto (nome, esposizione e posizione
- * geografica usata dai Suggerimenti per il meteo).
+ * "No selection" state of the Properties panel: shows garden info and settings
+ * (name, sun exposure, and geographic location used by Suggestions for weather).
  */
 function GardenSection() {
   const meta = useGardenStore((s) => s.meta);

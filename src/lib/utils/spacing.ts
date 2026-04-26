@@ -11,21 +11,21 @@ export const DEFAULT_CELL_SIZE_CM = 30;
 export const DEFAULT_SPACING_MODE: SpacingMode = "center-to-center";
 export const DEFAULT_ARRANGEMENT: PatchArrangement = "square";
 
-/** Lato massimo dell'aiuola: 15 m (1500 cm) per lato. */
+/** Max bed side: 15 m (1500 cm) per side. */
 export const MAX_BED_SIDE_CM = 1500;
 
 /**
- * Numero massimo di celle per lato per una data risoluzione, cosi' che
- * `cells * cellSizeCm <= MAX_BED_SIDE_CM` (fino a 15 m con passo
- * minimo 5 cm → 300 celle).
+ * Max number of cells per side for a given resolution, so that
+ * `cells * cellSizeCm <= MAX_BED_SIDE_CM` (up to 15 m with a minimum
+ * step of 5 cm → 300 cells).
  */
 export function maxGridDimForCellSizeCm(cellSizeCm: number): number {
   const s = Math.max(1, cellSizeCm);
   return Math.max(1, Math.floor(MAX_BED_SIDE_CM / s));
 }
 
-/** Pixel per centimetro al rendering del canvas (rapporto fisso). */
-export const PX_PER_CM = 1.87; // 30 cm = ~56 px (compatibile con il vecchio CELL_PX)
+/** Pixels per centimeter when rendering the canvas (fixed ratio). */
+export const PX_PER_CM = 1.87; // 30 cm = ~56 px (compatible with the old CELL_PX)
 
 const TRIANGULAR_ROW_FACTOR = Math.sqrt(3) / 2;
 
@@ -38,9 +38,8 @@ export function bedCellSizePx(bed: Pick<Bed, "cellSizeCm">): number {
 }
 
 /**
- * Cella in cm usata per mostrare la densità "piante/cella" nel catalogo:
- * aiuola selezionata se presente, altrimenti la prima aiuola, altrimenti
- * `DEFAULT_CELL_SIZE_CM`.
+ * Cell size (cm) used to display the "plants/cell" density in the catalog:
+ * selected bed if present, otherwise the first bed, otherwise `DEFAULT_CELL_SIZE_CM`.
  */
 export function cellSizeForCatalog(
   beds: Pick<Bed, "id" | "cellSizeCm">[],
@@ -55,9 +54,9 @@ export function cellSizeForCatalog(
 }
 
 /**
- * Stima quante piante stanno in un quadrato di lato `cellSizeCm` cm usando la
- * spaziatura della pianta (metodo square foot gardening): `(cella/spaziatura)²`
- * arrotondato. Più realistico di scalare `perCell` per area.
+ * Estimates how many plants fit in a `cellSizeCm`-cm square using the plant
+ * spacing (square-foot gardening method): `(cell/spacing)²`, rounded.
+ * More realistic than scaling `perCell` by area.
  */
 export function plantsPerCellFromSpacing(
   spacingCm: number,
@@ -69,8 +68,8 @@ export function plantsPerCellFromSpacing(
 }
 
 /**
- * Etichetta UI: `N/cella` oppure `<1/cella` se l'arrotondamento è zero.
- * Usa la spaziatura della pianta (non perCell fisso).
+ * UI label: `N/cell`, or `<1/cell` if rounding yields zero.
+ * Uses the plant spacing (not a fixed perCell).
  */
 export function perCellLabelForCellSize(plant: Plant, cellSizeCm: number): string {
   const spacingCm = plant.defaultSpacingCm;
@@ -84,11 +83,11 @@ export function perCellLabelForCellSize(plant: Plant, cellSizeCm: number): strin
 }
 
 /**
- * Numero minimo di celle (lato) necessarie per contenere almeno 1 pianta,
- * dato il lato cella e la spaziatura. Usato per espandere automaticamente
- * il patch quando la cella è più piccola della spaziatura.
+ * Minimum number of cells (per side) needed to fit at least 1 plant, given
+ * the cell size and spacing. Used to automatically expand the patch when the
+ * cell is smaller than the spacing.
  *
- * `ceil(spaziatura / cellaCm)` → es. spaziatura 60 cm, cella 15 cm → 4 celle.
+ * `ceil(spacing / cellCm)` → e.g. spacing 60 cm, cell 15 cm → 4 cells.
  */
 export function minCellsForOnePlant(spacingCm: number, cellSizeCm: number): number {
   if (cellSizeCm <= 0) return 1;
@@ -117,22 +116,21 @@ export function patchEffectiveArrangement(
 }
 
 /**
- * Footprint fisico in cm di un patch. La formula dipende dalla convenzione
- * `spacingMode` e dalla disposizione `arrangement`.
+ * Physical footprint (cm) of a patch. The formula depends on the `spacingMode`
+ * convention and the `arrangement` layout.
  *
- * Convenzioni (con `s = spacingCm`, `c = plantCols`, `r = plantRows`):
+ * Conventions (with `s = spacingCm`, `c = plantCols`, `r = plantRows`):
  *
- * - center-to-center: alone di `s/2` su ciascun lato
+ * - center-to-center: margin of `s/2` on each side
  *     w = c * s, h = r * s
- * - edge-to-edge: gap `s` fra piante e diametro pianta = `s`
+ * - edge-to-edge: gap `s` between plants and plant diameter = `s`
  *     w = (2c - 1) * s, h = (2r - 1) * s
- * - footprint: tile `s x s` per pianta, nessun alone
+ * - footprint: `s x s` tile per plant, no margin
  *     w = c * s, h = r * s
  *
- * Per disposizione triangolare le righe sono distanziate di `s * sqrt(3)/2`
- * verticalmente e sfalsate di `s/2` orizzontalmente; usiamo questa
- * compattazione con la convenzione c2c (per le altre la riduciamo a
- * `square` per coerenza geometrica).
+ * For triangular layout, rows are spaced by `s * sqrt(3)/2` vertically and
+ * offset by `s/2` horizontally; we apply this compaction with the c2c
+ * convention (for the others we reduce it to `square` for geometric consistency).
  */
 export function patchFootprintCm(
   patch: PlantPatch,
@@ -166,17 +164,17 @@ export function patchFootprintCm(
 const MIN_AREA_CM2 = 1e-6;
 
 /**
- * Celle occupate e footprint "a griglia".
+ * Occupied cells and "grid" footprint.
  *
- * Convenzione: `plantCols × plantRows` rappresenta SEMPRE quante celle del bed
- * il patch occupa sul canvas. Questo mantiene allineati:
- * - stepper Colonne/Righe
+ * Convention: `plantCols × plantRows` ALWAYS represents how many bed cells the
+ * patch occupies on the canvas. This keeps aligned:
+ * - Columns/Rows steppers
  * - rendering (CSS grid span)
- * - collisioni/fit (store)
- * - pannello proprietà ("Celle occupate" e "Ingombro")
+ * - collisions/fit (store)
+ * - properties panel ("Occupied cells" and "Footprint")
  *
- * La spaziatura e la disposizione influenzano invece la stima di "piante totali"
- * (densità), non la dimensione del rettangolo in griglia.
+ * Spacing and arrangement affect the estimated "total plants" (density), not
+ * the size of the grid rectangle.
  */
 export function patchDensityLayout(
   patch: PlantPatch,
@@ -202,9 +200,9 @@ export function patchDensityLayout(
 }
 
 /**
- * Celle occupate dal patch su griglia/aiuola: allineate a
- * `patchDensityLayout` (non al solo footprint spaziatura grezzo), cosi'
- * lato canvas, collisioni e pannello coincidono.
+ * Cells occupied by the patch in the bed/grid: aligned to `patchDensityLayout`
+ * (not just the raw spacing footprint), so the canvas, collisions, and panel
+ * all match.
  */
 export function patchOccupiedCells(
   patch: PlantPatch,
@@ -215,8 +213,8 @@ export function patchOccupiedCells(
 }
 
 /**
- * Rettangolo (in celle) che il patch occupa nella griglia dell'aiuola,
- * a partire da `anchor`. Estremi inclusivi.
+ * Rectangle (in cells) occupied by the patch in the bed grid, starting from
+ * `anchor`. Inclusive bounds.
  */
 export function patchCellRect(
   patch: PlantPatch,
@@ -250,7 +248,7 @@ export function anchorToCellIndex(
 }
 
 /**
- * `true` se i due patch occupano celle che si sovrappongono.
+ * `true` if the two patches occupy overlapping cells.
  */
 export function patchesOverlap(
   a: PlantPatch,
@@ -272,9 +270,9 @@ export function patchesOverlap(
 }
 
 /**
- * `true` se i rettangoli dei due patch nella griglia condividono almeno
- * uno spigolo orizzontale o verticale (esclusi i contatti diagonali).
- * Patch sovrapposti vengono trattati come adiacenti.
+ * `true` if the two patch rectangles in the grid share at least one horizontal
+ * or vertical edge (diagonal contacts excluded). Overlapping patches are
+ * treated as adjacent.
  */
 export function patchesAdjacent(
   a: PlantPatch,
@@ -298,8 +296,8 @@ export function patchesAdjacent(
 }
 
 /**
- * Restituisce il patch che copre la cella indicata (se presente).
- * Per patch 1x1 e' una corrispondenza diretta.
+ * Returns the patch that covers the given cell (if any).
+ * For 1x1 patches this is a direct match.
  */
 export function cellIndexToPatch(
   bed: Bed,
@@ -324,19 +322,19 @@ export function cellIndexToPatch(
 }
 
 /**
- * Numero totale di piante singole rappresentate dal patch (`plantCols * plantRows`).
+ * Total number of individual plants represented by the patch (`plantCols * plantRows`).
  */
 export function patchPlantCount(patch: PlantPatch): number {
   return patch.plantCols * patch.plantRows;
 }
 
 /**
- * Riepilogo pannello: piante calcolate dalla spaziatura (square foot gardening),
- * stesso `patchDensityLayout` di canvas e `patchOccupiedCells`.
+ * Panel summary: plants computed from spacing (square-foot gardening), using
+ * the same `patchDensityLayout` as the canvas and `patchOccupiedCells`.
  *
- * Formula piante: `areaTotale / areaPerPianta` = `(m × cella²) / spaziatura²`
- * dove `m = plantCols × plantRows`. Garantisce almeno 1 pianta se l'area
- * totale >= area minima per una pianta.
+ * Plant formula: `totalArea / areaPerPlant` = `(m × cellSize²) / spacing²`,
+ * where `m = plantCols × plantRows`. Ensures at least 1 plant if the total
+ * area >= the minimum area for one plant.
  */
 export function patchDensitySummaryForUI(
   patch: PlantPatch,
@@ -377,7 +375,7 @@ export function patchDensitySummaryForUI(
 }
 
 /**
- * `true` se il rettangolo occupato dal patch sta interamente dentro la griglia.
+ * `true` if the rectangle occupied by the patch is fully inside the grid.
  */
 export function patchFitsInBed(
   patch: PlantPatch,
@@ -393,7 +391,7 @@ export function patchFitsInBed(
   );
 }
 
-/** Etichetta italiana per la convenzione di spaziatura. */
+/** Italian label for the spacing convention. */
 export function spacingModeLabel(mode: SpacingMode): string {
   switch (mode) {
     case "center-to-center":

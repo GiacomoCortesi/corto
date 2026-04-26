@@ -1,13 +1,13 @@
 /**
  * POST /api/suggestions
  *
- * Riceve uno snapshot del giardino dal client, recupera (se possibile) le
- * previsioni meteo da Open-Meteo, costruisce il prompt per l'LLM, chiama
- * la Chat Completions API di OpenAI con response_format JSON schema e
- * restituisce un array di Suggestion validate.
+ * Receives a garden snapshot from the client, fetches (when possible) weather
+ * forecasts from Open-Meteo, builds the LLM prompt, calls OpenAI Chat
+ * Completions with JSON-schema response_format, and returns a validated array
+ * of Suggestions.
  *
- * Le credenziali stanno solo qui (variabili d'ambiente lato server):
- *   - OPENAI_API_KEY  (richiesta)
+ * Credentials live only here (server-side environment variables):
+ *   - OPENAI_API_KEY  (required)
  *   - OPENAI_MODEL    (default "gpt-4o-mini")
  *   - OPENAI_BASE_URL (default "https://api.openai.com/v1")
  */
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest): Promise<Response> {
   const now = body.nowIso ? Date.parse(body.nowIso) : Date.now();
   const nowMs = Number.isFinite(now) ? (now as number) : Date.now();
 
-  // 1. Meteo (best effort)
+  // 1. Weather (best effort)
   let weatherSummary: string | null = null;
   const loc = body.snapshot.meta.location;
   if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {

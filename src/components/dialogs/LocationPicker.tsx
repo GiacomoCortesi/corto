@@ -10,15 +10,15 @@ import { geocode, geocodeLabel, type GeocodeResult } from "@/lib/weather/geocodi
 import type { GardenLocation } from "@/lib/types";
 
 type Props = {
-  /** Posizione attualmente impostata (per mostrare lo stato corrente) */
+  /** Currently selected location (to show current state) */
   current?: GardenLocation;
-  /** Chiamato quando l'utente sceglie una località */
+  /** Called when the user picks a location */
   onPick: (loc: GardenLocation) => void;
-  /** Mostra il pulsante "Rimuovi posizione" se c'è già una `current` */
+  /** Shows the "Remove location" button if `current` is set */
   onClear?: () => void;
-  /** Etichetta del campo cerca (default "Cerca città o località") */
+  /** Search field label (default: "Search city or place") */
   searchLabel?: string;
-  /** Layout compatto per usarlo dentro pannelli laterali stretti */
+  /** Compact layout for narrow side panels */
   compact?: boolean;
 };
 
@@ -45,9 +45,9 @@ export function LocationPicker({
 
   const reqIdRef = React.useRef(0);
 
-  // Debounce ricerca su input. Nota: lo stato "vuoto" viene gestito
-  // direttamente in onChange per evitare setState dentro l'effect quando
-  // la query e' troppo corta (lint react-hooks/set-state-in-effect).
+  // Debounced input search. Note: the "empty" state is handled directly in
+  // onChange to avoid setState inside the effect when the query is too short
+  // (lint: react-hooks/set-state-in-effect).
   React.useEffect(() => {
     const trimmed = query.trim();
     if (trimmed.length < 2) return;

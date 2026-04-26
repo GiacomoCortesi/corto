@@ -169,8 +169,8 @@ export function Topbar({ canvasRef, onReset }: Props) {
               <PanelLeft className="size-4" />
             </SheetTrigger>
             <SheetContent side="left" className="p-0">
-              <div className="h-full flex flex-col border-r border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
-                <PlantCatalogContent />
+              <div className="h-full min-h-0 flex flex-col border-r border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
+                <PlantCatalogContent scrollMode="native" />
               </div>
             </SheetContent>
           </Sheet>
@@ -258,9 +258,7 @@ export function Topbar({ canvasRef, onReset }: Props) {
           </PopoverContent>
         </Popover>
 
-        <div className="hidden md:block">
-          <SatispayDonateDialog />
-        </div>
+        <SatispayDonateDialog />
 
         <Tooltip>
           <TooltipTrigger asChild>
@@ -355,7 +353,7 @@ export function Topbar({ canvasRef, onReset }: Props) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled className="text-xs">
-              v0.1 · prototipo
+              v0.0.1
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

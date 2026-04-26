@@ -10,8 +10,8 @@ export type PlantCategory =
   | "foglia";
 
 /**
- * Famiglia botanica (approssimata) per rotazioni colturali.
- * Campo opzionale: se assente, la rotazione può degradare su euristiche.
+ * (Approximate) botanical family for crop rotation.
+ * Optional field: if missing, rotation can fall back to heuristics.
  */
 export type CropFamily =
   | "solanaceae"
@@ -27,7 +27,7 @@ export type CropFamily =
   | "other";
 
 /**
- * Gruppo di rotazione semplificato (utile quando la famiglia è ignota).
+ * Simplified rotation group (useful when the family is unknown).
  */
 export type RotationGroup =
   | "fruiting"
@@ -41,62 +41,62 @@ export type RotationGroup =
   | "other";
 
 /**
- * Esigenza nutritiva complessiva della pianta:
- * - `low`: poco esigente (es. Allium, aromatiche)
- * - `medium`: mediamente esigente (es. foglia, radice)
- * - `high`: molto esigente / "ingordo" (es. solanacee, cucurbitacee, cavoli)
- * - `fixer`: azotofissatrice, migliora il terreno (leguminose)
+ * Overall nutrient demand of the plant:
+ * - `low`: low demand (e.g. Allium, herbs)
+ * - `medium`: medium demand (e.g. leafy greens, roots)
+ * - `high`: high demand / "heavy feeder" (e.g. solanaceae, cucurbits, cabbages)
+ * - `fixer`: nitrogen-fixer, improves the soil (legumes)
  */
 export type FertilizerDemand = "low" | "medium" | "high" | "fixer";
 
 /**
- * Linee guida di concimazione consigliate per la pianta.
- * Pensate per orto biologico domestico.
+ * Recommended fertilization guidelines for the plant.
+ * Intended for home organic gardening.
  */
 export type PlantFertilizer = {
   demand: FertilizerDemand;
-  /** Tipi di concime principali consigliati (1-3 voci) */
+  /** Main recommended fertilizer types (1-3 entries) */
   type: string[];
-  /** Periodicità/frequenza di concimazione (testo libero, breve) */
+  /** Fertilization schedule/frequency (short free text) */
   schedule: string;
-  /** Note opzionali (e.g., "evitare letame fresco") */
+  /** Optional notes (e.g. "avoid fresh manure") */
   notes?: string;
 };
 
 /**
- * Avversità tipiche e relativi rimedi consigliati (preferenza biologica).
+ * Common issues and suggested remedies (preferably organic).
  */
 export type PlantTreatment = {
-  /** Parassiti e malattie comuni */
+  /** Common pests and diseases */
   pests: string[];
-  /** Rimedi/trattamenti biologici suggeriti */
+  /** Suggested organic remedies/treatments */
   remedies: string[];
 };
 
 /**
- * Convenzione per interpretare `spacingCm`:
- * - `center-to-center`: distanza centro-centro fra piante adiacenti (default).
- * - `edge-to-edge`: spazio vuoto fra piante adiacenti, assumendo che il
- *   diametro della pianta sia pari alla spaziatura stessa.
- * - `footprint`: lato del riquadro quadrato riservato a ciascuna pianta.
+ * Convention for interpreting `spacingCm`:
+ * - `center-to-center`: center-to-center distance between adjacent plants (default).
+ * - `edge-to-edge`: empty space between adjacent plants, assuming the plant
+ *   diameter equals the spacing value.
+ * - `footprint`: side length of the square area reserved for each plant.
  */
 export type SpacingMode = "center-to-center" | "edge-to-edge" | "footprint";
 
 /**
- * Disposizione delle piante nel patch:
- * - `square`: griglia regolare `cols x rows`.
- * - `triangular`: file alternativamente sfalsate di mezzo passo, con
- *   passo verticale ridotto (packing esagonale; ~15% piu compatto).
+ * Plant layout within a patch:
+ * - `square`: regular `cols x rows` grid.
+ * - `triangular`: alternating rows offset by half a step, with a reduced
+ *   vertical step (hexagonal packing; ~15% more compact).
  */
 export type PatchArrangement = "square" | "triangular";
 
-/** Voce di consociazione o antagonismo nel catalogo (nome + motivo leggibile). */
+/** Companion/antagonist entry in the catalog (name + human-readable reason). */
 export type PlantNeighborEntry = {
-  /** ID pianta nel catalogo (per matching con i patch vicini). */
+  /** Plant ID in the catalog (for matching with nearby patches). */
   plantId: string;
-  /** Nome comune mostrato in UI. */
+  /** Common name shown in the UI. */
   name: string;
-  /** Perché la relazione è consigliata o da evitare (orientativo, orto domestico). */
+  /** Why the relationship is recommended or to be avoided (home-garden guidance). */
   reason: string;
 };
 
@@ -106,72 +106,72 @@ export type Plant = {
   scientific?: string;
   emoji: string;
   category: PlantCategory;
-  /** Famiglia botanica (rotazione). */
+  /** Botanical family (rotation). */
   cropFamily?: CropFamily;
-  /** Gruppo di rotazione semplificato. */
+  /** Simplified rotation group. */
   rotationGroup?: RotationGroup;
-  /** Pausa consigliata (anni) prima di ripetere famiglia/gruppo sulla stessa aiuola. */
+  /** Recommended break (years) before repeating family/group in the same bed. */
   rotationBreakYears?: number;
   /**
-   * Durata tipica del ciclo colturale (giorni). Opzionale: se mancante si
-   * ragiona con mesi semina/raccolto e diario eventi.
+   * Typical crop cycle length (days). Optional: if missing, we fall back to
+   * sowing/harvest months and the events log.
    */
   cropCycleDays?: { min: number; max: number };
   /**
-   * Piante per quadrato 30×30 cm (rifer. catalogo / square foot semplificato);
-   * nella UI "N/cella" è scalato in base a `Bed.cellSizeCm` (stessa densità, area).
+   * Plants per 30×30 cm square (catalog reference / simplified square-foot);
+   * in the UI, "N/cell" is scaled based on `Bed.cellSizeCm` (same density, area).
    */
   perCell: 1 | 2 | 4 | 9 | 16;
-  /** Distanza consigliata fra piante della stessa specie (cm) */
+  /** Recommended spacing between plants of the same species (cm) */
   defaultSpacingCm: number;
-  /** Convenzione di default per `defaultSpacingCm` (default `center-to-center`) */
+  /** Default convention for `defaultSpacingCm` (default: `center-to-center`) */
   defaultSpacingMode?: SpacingMode;
-  /** Disposizione di default (default `square`) */
+  /** Default layout (default: `square`) */
   defaultArrangement?: PatchArrangement;
   sun: SunNeed;
   water: "low" | "medium" | "high";
-  /** Mesi di semina (1-12) */
+  /** Sowing months (1-12) */
   sowing: number[];
   /**
-   * Mesi di trapianto (1-12), quando è comune inserire in aiuola una piantina
-   * già avviata (alveolo/vasetto) invece della semina diretta.
-   * Opzionale: se assente, la specie viene considerata solo per semina/raccolto.
+   * Transplant months (1-12), when it’s common to put a seedling in the bed
+   * (tray/pot) instead of direct sowing.
+   * Optional: if missing, the species is considered only for sowing/harvest.
    */
   transplanting?: number[];
-  /** Mesi di raccolto (1-12) */
+  /** Harvest months (1-12) */
   harvest: number[];
-  /** Piante consigliate accanto, con motivo sintetico. */
+  /** Recommended neighbors, with a short reason. */
   companions: PlantNeighborEntry[];
-  /** Piante da tenere distanti, con motivo sintetico. */
+  /** Plants to keep apart, with a short reason. */
   antagonists: PlantNeighborEntry[];
-  /** Indicazioni di concimazione (opzionale) */
+  /** Fertilization guidelines (optional) */
   fertilizer?: PlantFertilizer;
-  /** Avversità comuni e rimedi consigliati (opzionale) */
+  /** Common issues and suggested remedies (optional) */
   treatments?: PlantTreatment;
 };
 
 /**
- * Blocco di piante della stessa specie disposte su una sotto-griglia
- * `plantCols x plantRows` con spaziatura `spacingCm`. La convenzione e'
- * data da `spacingMode` (default `center-to-center`); `arrangement`
- * controlla la disposizione (default `square`).
+ * Block of same-species plants arranged on a `plantCols x plantRows`
+ * sub-grid with spacing `spacingCm`. The convention is defined by
+ * `spacingMode` (default: `center-to-center`), and `arrangement` controls
+ * the layout (default: `square`).
  *
- * L'`anchor` indica la cella in alto a sinistra occupata nella griglia
- * dell'aiuola (le celle sono `Bed.cellSizeCm` cm di lato, default 30).
+ * `anchor` indicates the top-left cell occupied in the bed grid (cells are
+ * `Bed.cellSizeCm` cm per side, default 30).
  */
 export type PlantPatch = {
   id: string;
   plantId: string;
   anchor: { col: number; row: number };
-  /** Numero di piante in larghezza (>= 1) */
+  /** Number of plants across (>= 1) */
   plantCols: number;
-  /** Numero di piante in altezza (>= 1) */
+  /** Number of plants down (>= 1) */
   plantRows: number;
-  /** Override della spaziatura di specie (cm) */
+  /** Override species spacing (cm) */
   spacingCm?: number;
-  /** Override della convenzione di spaziatura */
+  /** Override spacing convention */
   spacingMode?: SpacingMode;
-  /** Override della disposizione */
+  /** Override layout */
   arrangement?: PatchArrangement;
 };
 
@@ -181,7 +181,7 @@ export type Bed = {
   position: { x: number; y: number };
   cols: number;
   rows: number;
-  /** Lato fisico di una cella in cm (default 30) */
+  /** Physical side length of a cell in cm (default 30) */
   cellSizeCm?: number;
   patches: PlantPatch[];
 };
@@ -189,15 +189,15 @@ export type Bed = {
 export type SunOrientation = "N" | "S" | "E" | "O";
 
 /**
- * Posizione geografica dell'orto (opzionale). Usata dal motore di
- * suggerimenti per recuperare il meteo locale tramite Open-Meteo.
+ * Garden geographic location (optional). Used by the suggestions engine
+ * to fetch local weather via Open-Meteo.
  */
 export type GardenLocation = {
   lat: number;
   lon: number;
-  /** Etichetta leggibile, es. "Bologna, IT" */
+  /** Human-readable label, e.g. "Bologna, IT" */
   label?: string;
-  /** Timezone IANA, es. "Europe/Rome" */
+  /** IANA timezone, e.g. "Europe/Rome" */
   timezone?: string;
 };
 
@@ -205,7 +205,7 @@ export type GardenMeta = {
   name: string;
   sunOrientation: SunOrientation;
   createdAt: number;
-  /** Posizione geografica (opzionale, abilita le funzioni meteo) */
+  /** Geographic location (optional, enables weather features) */
   location?: GardenLocation;
 };
 
@@ -222,7 +222,7 @@ export type CompanionConflict = {
 };
 
 /**
- * Tipo di voce nel diario attività (label UI in italiano a parte).
+ * Activity log entry kind (separate Italian UI labels exist).
  */
 export type GardenActivityKind =
   | "sowing"
@@ -235,13 +235,13 @@ export type GardenActivityKind =
   | "other";
 
 /**
- * Evento di giardinaggio: data, tipo e riferimenti opzionali.
- * `plantId` denormalizzato se legato a un patch, per mostrare il nome
- * anche se il patch viene rimosso in seguito.
+ * Gardening event: date, kind, and optional references.
+ * `plantId` is denormalized when tied to a patch, so the name can still be
+ * shown even if the patch is later removed.
  */
 export type GardenActivity = {
   id: string;
-  /** Timestamp (ms) dell'attività */
+  /** Activity timestamp (ms) */
   at: number;
   kind: GardenActivityKind;
   notes?: string;
@@ -249,33 +249,33 @@ export type GardenActivity = {
   patchId?: string;
   plantId?: string;
   /**
-   * Vero se l'attività è stata creata da un suggerimento accettato e si
-   * trova nel futuro. Usato dal Diario per renderizzarla come "pianificata"
-   * con un'azione "Segna come fatta".
+   * True if the activity was created from an accepted suggestion and lies in
+   * the future. Used by the Log to render it as "planned" with a "Mark as done"
+   * action.
    */
   planned?: boolean;
 };
 
 /**
- * Suggerimento generato dall'LLM. Vive in memoria nel pannello
- * Suggerimenti finché l'utente non lo accetta (diventa `GardenActivity`)
- * o lo ignora (id memorizzato in `dismissedSuggestionIds`).
+ * Suggestion generated by the LLM. It lives in memory in the Suggestions
+ * panel until the user accepts it (becoming a `GardenActivity`) or dismisses
+ * it (id stored in `dismissedSuggestionIds`).
  */
 export type SuggestionConfidence = "low" | "medium" | "high";
 
 /**
- * Una riga per pianta/patch dentro un suggerimento raggruppato per
- * `kind`: indica se serve l'attività e il perché (cadenze, eventi, meteo).
+ * One row per plant/patch within a suggestion grouped by `kind`: indicates
+ * whether the activity is needed and why (cadences, events, weather).
  */
 export type SuggestionPlantItem = {
   bedId?: string;
   patchId?: string;
   plantId?: string;
-  /** Nome da mostrare (catalogo o testo modello) */
+  /** Name to display (catalog or model text) */
   plantName?: string;
-  /** Vero se questo patch necessita l'attività nel periodo proposto */
+  /** True if this patch needs the activity in the proposed window */
   needsAction: boolean;
-  /** Motivazione specifica: ultima attività, età pianta, cadenza, meteo */
+  /** Specific rationale: last activity, plant age, cadence, weather */
   rationale: string;
 };
 
@@ -283,27 +283,27 @@ export type Suggestion = {
   id: string;
   createdAt: number;
   kind: GardenActivityKind;
-  /** Timestamp consigliato per l'azione (stesso per tutte le piante del gruppo) */
+  /** Recommended timestamp for the action (same for all plants in the group) */
   suggestedFor: number;
-  /** Tolleranza in giorni intorno a `suggestedFor` (es. 3 = +/- 3 giorni) */
+  /** Tolerance in days around `suggestedFor` (e.g. 3 = +/- 3 days) */
   windowDays?: number;
   /**
-   * Legacy: un solo target (se `items` e' assente, il suggerimento riguarda
-   * un singolo patch).
+   * Legacy: a single target (if `items` is missing, the suggestion applies to
+   * one patch).
    */
   bedId?: string;
   patchId?: string;
   plantId?: string;
-  /** Titolo breve mostrato nella card */
+  /** Short title shown on the card */
   title: string;
-  /** Sintesi complessiva in italiano (incluso collegamento al meteo) */
+  /** Overall rationale in Italian (including the weather link) */
   rationale: string;
-  /** Eventuale nota meteo che ha guidato la decisione */
+  /** Optional weather note that guided the decision */
   weatherNote?: string;
   confidence: SuggestionConfidence;
   /**
-   * Valutazione per ciascun patch rilevante per questo tipo di attivita'.
-   * Se presente, il suggerimento e' "per categoria" con elenco piante.
+   * Evaluation for each patch relevant to this activity kind.
+   * If present, the suggestion is "by category" with a plant list.
    */
   items?: SuggestionPlantItem[];
 };

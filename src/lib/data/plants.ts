@@ -2,14 +2,14 @@ import type { CropFamily, Plant, PlantFertilizer, PlantTreatment, RotationGroup 
 import { tagAnti, tagComp } from "@/lib/data/neighbor-reasons";
 
 /**
- * Dataset prototipo di ortaggi/aromatiche comuni con relazioni di
- * companion planting basate su tradizione orticola europea.
- * I valori `sowing` e `harvest` sono indicativi per clima temperato.
+ * Prototype dataset of common vegetables/herbs with companion-planting
+ * relationships based on European gardening tradition.
+ * `sowing` and `harvest` values are indicative for a temperate climate.
  */
 
 /**
- * Concimazione/trattamenti condivisi per tutte le varietà di pomodoro
- * (mantengono coerenza con la voce base "pomodoro").
+ * Shared fertilization/treatments for all tomato varieties
+ * (keeps consistency with the base "tomato" entry).
  */
 const TOMATO_FERTILIZER: PlantFertilizer = {
   demand: "high",
@@ -42,7 +42,7 @@ const TOMATO_TREATMENTS: PlantTreatment = {
 };
 
 /**
- * Concimazione/trattamenti condivisi per tutte le varietà di zucchina.
+ * Shared fertilization/treatments for all zucchini varieties.
  */
 const ZUCCHINI_FERTILIZER: PlantFertilizer = {
   demand: "high",
@@ -73,7 +73,7 @@ const ZUCCHINI_TREATMENTS: PlantTreatment = {
 };
 
 /**
- * Concimazione/trattamenti condivisi per le varietà di cavolo (Brassica oleracea).
+ * Shared fertilization/treatments for cabbage varieties (Brassica oleracea).
  */
 const CABBAGE_FERTILIZER: PlantFertilizer = {
   demand: "high",
