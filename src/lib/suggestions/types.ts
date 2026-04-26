@@ -1,7 +1,7 @@
 /**
- * Tipi condivisi fra client (panel + store) e route handler delle
- * suggerimenti. Lo `GardenSnapshot` e' la versione "ridotta" dello stato
- * che il client manda al server: nessun history, nessun selection.
+ * Types shared between the client (panel + store) and the suggestions route
+ * handler. `GardenSnapshot` is the "reduced" version of the state that the
+ * client sends to the server: no history, no selection.
  */
 
 import type {
@@ -13,17 +13,17 @@ import type {
 
 export type { GardenActivity } from "@/lib/types";
 
-/** Payload che il client manda a `POST /api/suggestions`. */
+/** Payload sent by the client to `POST /api/suggestions`. */
 export type SuggestionsRequest = {
-  /** Snapshot minimo del giardino per ragionare sui suggerimenti */
+  /** Minimal garden snapshot used to generate suggestions */
   snapshot: GardenSnapshot;
-  /** Id di suggerimenti gia' ignorati (vengono filtrati lato server) */
+  /** IDs of suggestions already dismissed (filtered server-side) */
   dismissedIds: string[];
-  /** ISO datetime "now" lato client (con timezone) — opzionale */
+  /** Client-side ISO datetime "now" (with timezone) — optional */
   nowIso?: string;
 };
 
-/** Snapshot inviato al server: solo cio' che serve all'LLM. */
+/** Snapshot sent to the server: only what the LLM needs. */
 export type GardenSnapshot = {
   meta: {
     name: string;
@@ -31,15 +31,15 @@ export type GardenSnapshot = {
     location?: GardenLocation;
   };
   beds: Bed[];
-  /** Eventi recenti (ultimi N giorni). Filtrati lato client. */
+  /** Recent events (last N days). Filtered client-side. */
   events: GardenActivity[];
 };
 
-/** Risposta della route. */
+/** Route response. */
 export type SuggestionsResponse = {
   suggestions: Suggestion[];
-  /** Riepilogo meteo testuale, restituito anche al client per trasparenza */
+  /** Text weather summary, also returned to the client for transparency */
   weatherSummary?: string;
-  /** Errore "soft": null = ok, stringa = motivo (es. missing API key) */
+  /** "Soft" error: null = ok, string = reason (e.g. missing API key) */
   error?: string;
 };

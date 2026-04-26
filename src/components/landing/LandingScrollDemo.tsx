@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 type Step = {
   id: string;
   eyebrow: string;
-  title: string;
+  title: React.ReactNode;
   body: React.ReactNode;
   icon: React.ReactNode;
 };
@@ -56,7 +56,11 @@ const STEPS: Step[] = [
   {
     id: "step-3",
     eyebrow: "Step 3",
-    title: "Info mirate + modalità “Vicino”",
+    title: (
+      <>
+        Info mirate + modalità <em>Vicino</em>
+      </>
+    ),
     body: (
       <>
         Per ogni pianta ottieni <strong>indicazioni pratiche</strong>: trattamenti, possibili malattie

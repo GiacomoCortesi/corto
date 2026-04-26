@@ -71,7 +71,7 @@ export function importProjectJsonText(text: string) {
 
   const migrated = migratePersistedState(rawState, version) as Partial<ExportableState>;
 
-  // Validazione minimale per evitare stati corrotti.
+  // Minimal validation to avoid corrupted state.
   if (!migrated.meta || !migrated.beds) {
     throw new Error("File non valido (campi obbligatori mancanti).");
   }

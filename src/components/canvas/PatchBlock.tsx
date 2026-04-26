@@ -31,9 +31,9 @@ type Props = {
   patch: PlantPatch;
   relation?: "good" | "bad" | "none";
   outOfSeason?: boolean;
-  /** 1-12: mese del filtro stagione, oppure mese calendario se filtro spento. */
+  /** 1-12: season filter month, or calendar month when the filter is off. */
   seasonMonth: number;
-  /** Sfondo cella: colore in base a semina/raccolto per quel mese. */
+  /** Cell background: color based on sowing/harvest for that month. */
   seasonMode: PlantSeasonMode;
 };
 
@@ -207,9 +207,10 @@ export function PatchBlock({
         onClick={(e) => e.stopPropagation()}
         className={cn(
           "absolute top-0.5 left-0.5 size-4 rounded bg-card/80 border border-border/60 text-muted-foreground",
-          "hover:text-foreground hover:border-border opacity-0 group-hover:opacity-100 transition-opacity",
+          "hover:text-foreground hover:border-border opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
           "grid place-items-center cursor-grab active:cursor-grabbing",
           isDragging && "opacity-100",
+          isSelected && "opacity-100",
         )}
         aria-label="Trascina patch"
       >
@@ -219,7 +220,12 @@ export function PatchBlock({
       <button
         type="button"
         onClick={handleRemove}
-        className="absolute top-0.5 right-0.5 size-4 rounded-full bg-card border border-border text-muted-foreground hover:text-destructive hover:border-destructive opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center"
+        className={cn(
+          "absolute top-0.5 right-0.5 size-4 rounded-full bg-card border border-border text-muted-foreground",
+          "hover:text-destructive hover:border-destructive opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
+          "grid place-items-center",
+          isSelected && "opacity-100"
+        )}
         aria-label="Rimuovi pianta"
       >
         <X className="size-2.5" />

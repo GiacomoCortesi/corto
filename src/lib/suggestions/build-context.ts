@@ -1,7 +1,7 @@
 /**
- * Trasforma uno `GardenSnapshot` (lato client) + l'eventuale meteo in un
- * blocco di "contesto" testuale per il prompt LLM. Lo manteniamo
- * volutamente compatto (token!) e leggibile.
+ * Turns a client-side `GardenSnapshot` plus optional weather into a textual
+ * "context" block for the LLM prompt. We intentionally keep it compact
+ * (tokens!) and readable.
  */
 
 import type {
@@ -36,8 +36,8 @@ function daysAgo(ts: number, now: number): number {
 }
 
 function plantSummary(p: Plant): string {
-  // Una riga compatta con quello che serve a ragionare:
-  // categoria, acqua, sole, mesi semina/raccolto, fert/treatments brevi.
+  // One compact line with what’s needed for reasoning:
+  // category, water, sun, sowing/harvest months, short fert/treatments.
   const sowing = p.sowing.length ? `sem ${p.sowing.join(",")}` : "";
   const transplanting = (p.transplanting ?? []).length
     ? `trap ${(p.transplanting ?? []).join(",")}`
@@ -54,8 +54,8 @@ function plantSummary(p: Plant): string {
 }
 
 /**
- * Per ogni patch trova l'evento "di partenza" (semina o trapianto piu'
- * vecchio per quel patch). Usato per stimare l'eta' del patch.
+ * For each patch, finds the "starting" event (oldest sowing or transplanting
+ * for that patch). Used to estimate patch age.
  */
 function patchStartTs(
   patch: PlantPatch,
@@ -71,8 +71,8 @@ function patchStartTs(
 }
 
 /**
- * Per ogni (patchId, kind) trova il timestamp dell'evento piu' recente.
- * Cosi' il modello sa che "sarchiatura su patch X: 8gg fa".
+ * For each (patchId, kind), finds the timestamp of the most recent event.
+ * This lets the model reason like "weeding on patch X: 8 days ago".
  */
 function lastEventByPatchAndKind(
   events: GardenActivity[],
@@ -97,9 +97,9 @@ const RELEVANT_KINDS: GardenActivityKind[] = [
 ];
 
 export type BuiltContext = {
-  /** Markdown-ish testo da iniettare come messaggio user nel prompt */
+  /** Markdown-ish text to inject as the user message in the prompt */
   text: string;
-  /** Lookup utile al server per arricchire la risposta (es. plantId from patchId) */
+  /** Server-side lookup to enrich the response (e.g. plantId from patchId) */
   patchIndex: Map<string, { bedId: string; plantId: string }>;
 };
 

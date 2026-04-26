@@ -355,7 +355,7 @@ export function Topbar({ canvasRef, onReset }: Props) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem disabled className="text-xs">
-              v0.1 · prototipo
+              v0.0.1
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

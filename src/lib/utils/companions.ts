@@ -5,9 +5,9 @@ import { patchCellRect, patchesAdjacent } from "@/lib/utils/spacing";
 export type CellRelation = "good" | "bad" | "none";
 
 /**
- * Per ogni patch di un'aiuola, calcola le relazioni con i patch adiacenti
- * (rettangoli che condividono uno spigolo orizzontale o verticale).
- * Per ciascuna coppia adiacente si emette al più un conflitto per direzione.
+ * For each patch in a bed, computes relationships with adjacent patches
+ * (rectangles that share a horizontal or vertical edge).
+ * For each adjacent pair, at most one conflict per direction is emitted.
  */
 export function evaluateBedConflicts(bed: Bed): CompanionConflict[] {
   const conflicts: CompanionConflict[] = [];
@@ -41,10 +41,10 @@ export function evaluateBedConflicts(bed: Bed): CompanionConflict[] {
 }
 
 /**
- * Mappa cellIndex -> relazione peggiore (bad > good > none) per styling.
- * Espande l'area occupata da ciascun patch coinvolto in un conflitto sulle
- * celle corrispondenti della griglia, così la visualizzazione su singola
- * cella resta corretta sia per patch 1x1 sia per patch più grandi.
+ * Maps cellIndex -> worst relationship (bad > good > none) for styling.
+ * Expands the area occupied by each patch involved in a conflict across the
+ * corresponding grid cells, so per-cell rendering stays correct both for 1x1
+ * patches and for larger patches.
  */
 export function cellRelationsForBed(bed: Bed): Map<number, CellRelation> {
   const map = new Map<number, CellRelation>();
@@ -73,8 +73,8 @@ export function cellRelationsForBed(bed: Bed): Map<number, CellRelation> {
 }
 
 /**
- * Mappa patchId -> relazione peggiore (bad > good > none) per evidenziare
- * il blocco intero anziché le singole celle.
+ * Maps patchId -> worst relationship (bad > good > none) to highlight the
+ * whole block rather than individual cells.
  */
 export function patchRelationsForBed(bed: Bed): Map<string, CellRelation> {
   const map = new Map<string, CellRelation>();
@@ -94,7 +94,7 @@ export type CompanionPair = {
 };
 
 /**
- * Coppie uniche per il pannello (deduplica le coppie ordinando per id).
+ * Unique pairs for the panel (dedup by sorting IDs).
  */
 export function uniqueCompanionPairs(bed: Bed): CompanionPair[] {
   const seen = new Set<string>();

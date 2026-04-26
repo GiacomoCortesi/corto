@@ -326,8 +326,8 @@ function SuggestionCard({
   const groupedItems = React.useMemo(() => {
     if (!grouped) return null;
 
-    // Raggruppa righe per specie (plantId o plantName) così più patch della
-    // stessa pianta diventano una singola voce.
+    // Group rows by species (plantId or plantName) so multiple patches of the
+    // same plant become a single entry.
     type Agg = {
       key: string;
       plantName: string;
