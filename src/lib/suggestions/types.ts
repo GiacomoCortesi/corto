@@ -6,10 +6,12 @@
 
 import type {
   Bed,
-  GardenLocation,
   GardenActivity,
+  GardenLocation,
   Suggestion,
 } from "@/lib/types";
+
+export type { GardenActivity } from "@/lib/types";
 
 /** Payload che il client manda a `POST /api/suggestions`. */
 export type SuggestionsRequest = {
