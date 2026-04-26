@@ -1,36 +1,38 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Corto · Garden Planner
 
-## Getting Started
+Prototipo di **garden planner 2D** (stile *square‑foot gardening*): aiuole trascinabili su canvas, griglia interna con **drag & drop** delle piante, **companion planting**, filtro **stagionale**, statistiche ed export **PNG**. Stato salvato in **localStorage** (nessun backend).
 
-First, run the development server:
+## Requisiti
+
+- **Node.js** (consigliato: versione recente LTS)
+- **npm** (repo include `package-lock.json`)
+
+## Avvio rapido
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Apri `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Script
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev      # dev server
+npm run build    # build produzione
+npm run start    # serve produzione
+npm run lint     # eslint
+npm run test     # node --test (TS via tsx)
+```
 
-## Learn More
+## Suggerimenti AI (opzionale)
 
-To learn more about Next.js, take a look at the following resources:
+La feature “Suggerimenti” usa un route handler server-side (`src/app/api/suggestions/route.ts`).
+Per abilitarla crea `.env.local` e imposta:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `OPENAI_API_KEY` (**required**)
+- `OPENAI_MODEL` (default: `gpt-4o-mini`)
+- `OPENAI_BASE_URL` (default: `https://api.openai.com/v1`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Senza chiave l’app funziona comunque, ma il pannello mostrerà errore quando richiedi suggerimenti.

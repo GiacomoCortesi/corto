@@ -1,0 +1,14 @@
+services:
+  corto:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      # Server-only (required for Suggestions API):
+      # OPENAI_API_KEY: ${OPENAI_API_KEY}
+      # Optional:
+      # OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      # OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      # Public config:
+      # NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
