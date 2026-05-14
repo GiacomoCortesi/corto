@@ -16,20 +16,23 @@ import type {
 } from "@/lib/types";
 import { plantById } from "@/lib/data/plants";
 import {
-  DEFAULT_CELL_SIZE_CM,
+  clampBedSizeCm,
+  clampPatchPositionCm,
+  defaultPatchSizeCm,
+  MAX_BED_SIDE_CM,
+  migratePatchV6ToV7,
+  MIN_BED_SIDE_CM,
+  quantizeCm,
+  type LegacyPatchV6,
+} from "@/lib/utils/geometry";
+import {
   anchorToCellIndex,
-  bedCellSizeCm,
   cellIndexToAnchor,
-  maxGridDimForCellSizeCm,
-  minCellsForOnePlant,
   patchFitsInBed,
   patchesOverlap,
 } from "@/lib/utils/spacing";
 
 const HISTORY_LIMIT = 30;
-
-const MIN_CELL_SIZE_CM = 5;
-const MAX_CELL_SIZE_CM = 60;
 
 type Snapshot = {
   meta: GardenMeta;
@@ -37,7 +40,7 @@ type Snapshot = {
 };
 
 export const PERSIST_KEY = "corto-garden-v1";
-export const PERSIST_VERSION = 6;
+export const PERSIST_VERSION = 9;
 
 export function defaultSeasonMonth(): number {
   return new Date().getMonth() + 1;
@@ -72,9 +75,8 @@ export type AddActivityInput = Omit<GardenActivity, "id">;
 
 export type AddPatchInput = {
   plantId: string;
-  anchor: { col: number; row: number };
-  plantCols?: number;
-  plantRows?: number;
+  positionCm: { x: number; y: number };
+  sizeCm?: { width: number; height: number };
   spacingCm?: number;
   spacingMode?: SpacingMode;
   arrangement?: PatchArrangement;
@@ -95,31 +97,20 @@ type Actions = {
   removeBed: (id: string) => void;
   moveBed: (id: string, position: { x: number; y: number }) => void;
   renameBed: (id: string, name: string) => void;
-  resizeBed: (id: string, cols: number, rows: number) => void;
-  /**
-   * Changes grid resolution while preserving the bed's physical size in cm.
-   * Rescales `cols`/`rows` and each patch `anchor` to the new step. Patches
-   * that no longer fit in the grid after rescaling (or that collide with each
-   * other after rounding) are dropped. Returns the number of dropped patches
-   * (0 = perfect rescale).
-   */
-  setBedCellSize: (id: string, cellSizeCm: number) => number;
+  resizeBedCm: (id: string, widthCm: number, heightCm: number) => number;
 
   addPatch: (bedId: string, input: AddPatchInput) => PlantPatch | null;
   removePatch: (bedId: string, patchId: string) => void;
-  /** Resizes the patch. Returns `false` if the change was rejected
-   *  (overlap or bed overflow). */
-  resizePatch: (
+  resizePatchCm: (
     bedId: string,
     patchId: string,
-    plantCols: number,
-    plantRows: number,
+    sizeCm: { width: number; height: number },
   ) => boolean;
-  /** Moves the patch. Returns `false` if the new position is invalid. */
-  movePatch: (
+  /** Moves the patch to a metric position. Returns `false` if invalid. */
+  movePatchCm: (
     bedId: string,
     patchId: string,
-    anchor: { col: number; row: number },
+    positionCm: { x: number; y: number },
   ) => boolean;
   /** Changes (or resets) patch spacing. Returns `false` if rejected. */
   setPatchSpacing: (
@@ -140,11 +131,11 @@ type Actions = {
     arrangement: PatchArrangement | undefined,
   ) => boolean;
 
-  /** Backward-compatible wrapper: creates a 1x1 patch on the given cell. */
-  addPlantToBed: (
+  /** Creates a patch at a metric position (fluid catalog drop). */
+  addPlantToBedAtCm: (
     bedId: string,
     plantId: string,
-    cellIndex: number,
+    positionCm: { x: number; y: number },
   ) => PlantPatch | null;
   /** Backward-compatible wrapper: equivalent to `removePatch`. */
   removePlantInstance: (bedId: string, instanceId: string) => void;
@@ -197,7 +188,8 @@ function snapshot(state: State): Snapshot {
       position: { ...b.position },
       patches: b.patches.map((p) => ({
         ...p,
-        anchor: { ...p.anchor },
+        positionCm: { ...p.positionCm },
+        sizeCm: { ...p.sizeCm },
       })),
     })),
   };
@@ -209,7 +201,7 @@ function pushHistory(state: State): Pick<State, "past" | "future"> {
 }
 
 /**
- * Helper shared by `resizePatch`/`movePatch`/`setPatchSpacing`/...
+ * Helper shared by `resizePatchCm`/`movePatchCm`/`setPatchSpacing`/...
  * Applies `update` to the patch, validates fit + overlap in the bed, and
  * updates the store. Returns `true` if applied, `false` if rejected (overlap,
  * overflow, missing objects).
@@ -336,9 +328,8 @@ export const useGardenStore = create<GardenStore>()(
             x: 120 + state.beds.length * 40,
             y: 80 + state.beds.length * 40,
           },
-          cols: 24,
-          rows: 24,
-          cellSizeCm: 5,
+          widthCm: 120,
+          heightCm: 120,
           patches: [],
         };
         set({
@@ -380,61 +371,17 @@ export const useGardenStore = create<GardenStore>()(
         });
       },
 
-      resizeBed: (id, cols, rows) => {
-        const state = get();
-        set({
-          ...pushHistory(state),
-          beds: state.beds.map((b) => {
-            if (b.id !== id) return b;
-            const cell = b.cellSizeCm ?? DEFAULT_CELL_SIZE_CM;
-            const maxDim = maxGridDimForCellSizeCm(cell);
-            const c = Math.max(1, Math.min(maxDim, cols));
-            const r = Math.max(1, Math.min(maxDim, rows));
-            const next: Bed = { ...b, cols: c, rows: r };
-            // Drop patches whose anchor falls outside the new grid; patches
-            // that still anchor inside are kept even if their footprint
-            // overflows (rendered clipped). A future iteration may resize
-            // patches to fit instead.
-            next.patches = b.patches.filter(
-              (p) => p.anchor.col < c && p.anchor.row < r,
-            );
-            return next;
-          }),
-        });
-      },
-
-      setBedCellSize: (id, cellSizeCm) => {
+      resizeBedCm: (id, widthCm, heightCm) => {
         const state = get();
         const bed = state.beds.find((b) => b.id === id);
         if (!bed) return 0;
-        const newCell = Math.max(
-          MIN_CELL_SIZE_CM,
-          Math.min(MAX_CELL_SIZE_CM, Math.round(cellSizeCm)),
-        );
-        const oldCell = bed.cellSizeCm ?? DEFAULT_CELL_SIZE_CM;
-        if (newCell === oldCell) return 0;
+        const size = clampBedSizeCm(widthCm, heightCm);
+        if (size.width === bed.widthCm && size.height === bed.heightCm) return 0;
 
-        // Preserve physical bed dimensions: if the bed is W cm wide and
-        // we move from 30 cm cells to 5 cm cells, cols goes from 4 to 24.
-        const ratio = oldCell / newCell;
-        const maxDim = maxGridDimForCellSizeCm(newCell);
-        const cols = Math.max(
-          1,
-          Math.min(maxDim, Math.round(bed.cols * ratio)),
-        );
-        const rows = Math.max(
-          1,
-          Math.min(maxDim, Math.round(bed.rows * ratio)),
-        );
-
-        // Rescale each patch's anchor by the same ratio (rounded). Drop
-        // anything that no longer fits or collides with an already kept
-        // patch after rounding.
         const candidate: Bed = {
           ...bed,
-          cellSizeCm: newCell,
-          cols,
-          rows,
+          widthCm: size.width,
+          heightCm: size.height,
           patches: [],
         };
         const kept: PlantPatch[] = [];
@@ -445,36 +392,21 @@ export const useGardenStore = create<GardenStore>()(
             dropped++;
             continue;
           }
-          const next: PlantPatch = {
-            ...patch,
-            anchor: {
-              col: Math.min(
-                cols - 1,
-                Math.max(0, Math.round(patch.anchor.col * ratio)),
-              ),
-              row: Math.min(
-                rows - 1,
-                Math.max(0, Math.round(patch.anchor.row * ratio)),
-              ),
-            },
-          };
-          if (!patchFitsInBed(next, candidate, plant)) {
+          if (!patchFitsInBed(patch, candidate, plant)) {
             dropped++;
             continue;
           }
           const collides = kept.some((existing) =>
-            patchesOverlap(next, existing, candidate, plantById),
+            patchesOverlap(patch, existing, candidate, plantById),
           );
           if (collides) {
             dropped++;
             continue;
           }
-          kept.push(next);
+          kept.push(patch);
         }
         candidate.patches = kept;
 
-        // If the currently selected patch was dropped, fall back to a
-        // bed-level selection so the panel doesn't show a dangling ref.
         const sel = state.selection;
         const selectedDropped =
           sel?.kind === "plant" &&
@@ -499,16 +431,24 @@ export const useGardenStore = create<GardenStore>()(
         const plant = plantById(input.plantId);
         if (!plant) return null;
 
-        const cellCm = bedCellSizeCm(bed);
         const spacing = input.spacingCm ?? plant.defaultSpacingCm;
-        const minCells = minCellsForOnePlant(spacing, cellCm);
+        const sizeCm =
+          input.sizeCm ?? defaultPatchSizeCm(spacing);
+
+        const positionCm = clampPatchPositionCm(
+          { sizeCm },
+          bed,
+          {
+            x: quantizeCm(input.positionCm.x),
+            y: quantizeCm(input.positionCm.y),
+          },
+        );
 
         const candidate: PlantPatch = {
           id: uid("patch"),
           plantId: input.plantId,
-          anchor: { ...input.anchor },
-          plantCols: Math.max(minCells, input.plantCols ?? minCells),
-          plantRows: Math.max(minCells, input.plantRows ?? minCells),
+          positionCm,
+          sizeCm,
           spacingCm: input.spacingCm,
           spacingMode: input.spacingMode,
           arrangement: input.arrangement,
@@ -546,18 +486,32 @@ export const useGardenStore = create<GardenStore>()(
         });
       },
 
-      resizePatch: (bedId, patchId, plantCols, plantRows) =>
-        applyPatchUpdate(get, set, bedId, patchId, (current) => ({
+      resizePatchCm: (bedId, patchId, sizeCm) => {
+        const bed = get().beds.find((b) => b.id === bedId);
+        if (!bed) return false;
+        return applyPatchUpdate(get, set, bedId, patchId, (current) => ({
           ...current,
-          plantCols: Math.max(1, plantCols),
-          plantRows: Math.max(1, plantRows),
-        })),
+          sizeCm: {
+            width: quantizeCm(sizeCm.width),
+            height: quantizeCm(sizeCm.height),
+          },
+        }));
+      },
 
-      movePatch: (bedId, patchId, anchor) =>
-        applyPatchUpdate(get, set, bedId, patchId, (current) => ({
-          ...current,
-          anchor: { ...anchor },
-        })),
+      movePatchCm: (bedId, patchId, positionCm) => {
+        const bed = get().beds.find((b) => b.id === bedId);
+        if (!bed) return false;
+        const current = bed.patches.find((p) => p.id === patchId);
+        if (!current) return false;
+        const next = clampPatchPositionCm(current, bed, {
+          x: quantizeCm(positionCm.x),
+          y: quantizeCm(positionCm.y),
+        });
+        return applyPatchUpdate(get, set, bedId, patchId, (patch) => ({
+          ...patch,
+          positionCm: next,
+        }));
+      },
 
       setPatchSpacing: (bedId, patchId, spacingCm) =>
         applyPatchUpdate(get, set, bedId, patchId, (current) => ({
@@ -577,15 +531,8 @@ export const useGardenStore = create<GardenStore>()(
           arrangement,
         })),
 
-      addPlantToBed: (bedId, plantId, cellIndex) => {
-        const bed = get().beds.find((b) => b.id === bedId);
-        if (!bed) return null;
-        if (cellIndex < 0 || cellIndex >= bed.cols * bed.rows) return null;
-        return get().addPatch(bedId, {
-          plantId,
-          anchor: cellIndexToAnchor(cellIndex, bed.cols),
-        });
-      },
+      addPlantToBedAtCm: (bedId, plantId, positionCm) =>
+        get().addPatch(bedId, { plantId, positionCm }),
 
       removePlantInstance: (bedId, instanceId) => {
         get().removePatch(bedId, instanceId);
@@ -736,6 +683,16 @@ type LegacyPlantInstance = {
   cellIndex: number;
 };
 
+type LegacyBedV7 = {
+  id: string;
+  name: string;
+  position: { x: number; y: number };
+  cols: number;
+  rows: number;
+  cellSizeCm?: number;
+  patches: PlantPatch[];
+};
+
 type LegacyBed = {
   id: string;
   name: string;
@@ -743,25 +700,99 @@ type LegacyBed = {
   cols: number;
   rows: number;
   cellSizeCm?: number;
-  // v1 shape
   plants?: LegacyPlantInstance[];
-  // v2 shape (already migrated)
-  patches?: PlantPatch[];
+  patches?: Array<LegacyPatchV6 | PlantPatch>;
 };
 
-function migrateBedV1ToV2(bed: LegacyBed): Bed {
-  if (Array.isArray(bed.patches)) {
-    return {
-      id: bed.id,
-      name: bed.name,
-      position: bed.position,
-      cols: bed.cols,
-      rows: bed.rows,
-      cellSizeCm: bed.cellSizeCm ?? DEFAULT_CELL_SIZE_CM,
-      patches: bed.patches,
-    };
+function normalizeBed(bed: Bed): Bed {
+  return {
+    ...bed,
+    widthCm: Math.max(
+      MIN_BED_SIDE_CM,
+      Math.min(MAX_BED_SIDE_CM, bed.widthCm ?? 120),
+    ),
+    heightCm: Math.max(
+      MIN_BED_SIDE_CM,
+      Math.min(MAX_BED_SIDE_CM, bed.heightCm ?? 120),
+    ),
+    patches: bed.patches.map((p) => ({
+      ...p,
+      positionCm: { ...p.positionCm },
+      sizeCm: { ...p.sizeCm },
+    })),
+  };
+}
+
+function stripGridStepFromBed(bed: Bed & { gridStepCm?: number }): Bed {
+  const { gridStepCm: _removed, ...rest } = bed;
+  return normalizeBed(rest as Bed);
+}
+
+function migrateBedV7ToV8(bed: LegacyBedV7 | Bed): Bed {
+  if ("widthCm" in bed && typeof bed.widthCm === "number") {
+    return stripGridStepFromBed(bed as Bed & { gridStepCm?: number });
   }
-  const patches: PlantPatch[] = (bed.plants ?? []).map((p) => ({
+  const legacy = bed as LegacyBedV7;
+  const cell = legacy.cellSizeCm ?? 30;
+  return normalizeBed({
+    id: legacy.id,
+    name: legacy.name,
+    position: legacy.position,
+    widthCm: legacy.cols * cell,
+    heightCm: legacy.rows * cell,
+    patches: legacy.patches,
+  });
+}
+
+function normalizeBeds(beds: Bed[]): Bed[] {
+  return beds.map((b) => normalizeBed(b));
+}
+
+function isMetricPatch(patch: LegacyPatchV6 | PlantPatch): patch is PlantPatch {
+  return (
+    "positionCm" in patch &&
+    "sizeCm" in patch &&
+    patch.positionCm != null &&
+    patch.sizeCm != null
+  );
+}
+
+function ensureMetricPatch(
+  patch: LegacyPatchV6 | PlantPatch,
+  cellSize: number,
+): PlantPatch {
+  if (isMetricPatch(patch)) return patch;
+  return migratePatchV6ToV7(patch, cellSize);
+}
+
+function migrateBedPatchesToMetric(bed: LegacyBed): LegacyBedV7 {
+  const cell = bed.cellSizeCm ?? 30;
+  let rawPatches: Array<LegacyPatchV6 | PlantPatch>;
+  if (Array.isArray(bed.patches)) {
+    rawPatches = bed.patches;
+  } else {
+    rawPatches = (bed.plants ?? []).map((p) => ({
+      id: p.id,
+      plantId: p.plantId,
+      anchor: cellIndexToAnchor(p.cellIndex, bed.cols),
+      plantCols: 1,
+      plantRows: 1,
+    }));
+  }
+  return {
+    id: bed.id,
+    name: bed.name,
+    position: bed.position,
+    cols: bed.cols,
+    rows: bed.rows,
+    cellSizeCm: cell,
+    patches: rawPatches.map((p) => ensureMetricPatch(p, cell)),
+  };
+}
+
+function migrateBedV1ToV2(bed: LegacyBed): LegacyBed {
+  if (Array.isArray(bed.patches)) return bed;
+  const patches: LegacyPatchV6[] = (bed.plants ?? []).map((p) => ({
     id: p.id,
     plantId: p.plantId,
     anchor: cellIndexToAnchor(p.cellIndex, bed.cols),
@@ -774,7 +805,7 @@ function migrateBedV1ToV2(bed: LegacyBed): Bed {
     position: bed.position,
     cols: bed.cols,
     rows: bed.rows,
-    cellSizeCm: bed.cellSizeCm ?? DEFAULT_CELL_SIZE_CM,
+    cellSizeCm: bed.cellSizeCm ?? 30,
     patches,
   };
 }
@@ -785,7 +816,9 @@ export function migratePersistedState(persisted: unknown, fromVersion: number) {
     beds?: LegacyBed[];
   };
   if (fromVersion < 2) {
-    const beds = (state.beds ?? []).map((b) => migrateBedV1ToV2(b));
+    const beds = (state.beds ?? []).map((b) =>
+      migrateBedV1ToV2(b as unknown as LegacyBed),
+    );
     state = { ...state, beds } as Partial<State> & { beds?: LegacyBed[] };
   }
   if (fromVersion < 3) {
@@ -821,7 +854,31 @@ export function migratePersistedState(persisted: unknown, fromVersion: number) {
       seasonFilter: normalizeSeasonFilter(s.seasonFilter),
     } as typeof state;
   }
+  if (fromVersion < 7) {
+    const beds = (state.beds ?? []).map((b) =>
+      migrateBedPatchesToMetric(b as unknown as LegacyBed),
+    );
+    state = { ...state, beds } as typeof state;
+  }
+  if (fromVersion < 8) {
+    const beds = ((state.beds ?? []) as Array<LegacyBedV7 | Bed>).map((b) =>
+      migrateBedV7ToV8(b),
+    );
+    state = { ...state, beds } as typeof state;
+  }
+  if (fromVersion < 9) {
+    const beds = ((state.beds ?? []) as Array<Bed & { gridStepCm?: number }>).map(
+      (b) => stripGridStepFromBed(b),
+    );
+    state = { ...state, beds } as typeof state;
+  }
   const normalized = state as Partial<State>;
+  if (Array.isArray(normalized.beds)) {
+    state = {
+      ...state,
+      beds: normalizeBeds(normalized.beds as Bed[]),
+    } as typeof state;
+  }
   if (typeof normalized.seasonFilter !== "number") {
     state = { ...state, seasonFilter: defaultSeasonMonth() } as typeof state;
   }

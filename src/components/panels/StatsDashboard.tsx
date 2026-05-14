@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useGardenStore } from "@/lib/store";
 import { plantById, MONTHS_LONG } from "@/lib/data/plants";
-import { patchDensitySummaryForUI, patchOccupiedCells } from "@/lib/utils/spacing";
+import { patchDensitySummaryForUI, bedAreaCm2, patchOccupiedAreaCm2 } from "@/lib/utils/spacing";
 import { Sprout, LayoutGrid, Layers3, CalendarRange } from "lucide-react";
 
 export function StatsDashboard() {
@@ -11,17 +11,17 @@ export function StatsDashboard() {
 
   const stats = React.useMemo(() => {
     const bedCount = beds.length;
-    const totalCells = beds.reduce((acc, b) => acc + b.cols * b.rows, 0);
-    let occupiedCells = 0;
+    const totalAreaCm2 = beds.reduce((acc, b) => acc + bedAreaCm2(b), 0);
+    let occupiedAreaCm2 = 0;
     for (const b of beds) {
       for (const patch of b.patches) {
-        const p = plantById(patch.plantId);
-        if (!p) continue;
-        const { cols, rows } = patchOccupiedCells(patch, b, p);
-        occupiedCells += cols * rows;
+        occupiedAreaCm2 += patchOccupiedAreaCm2(patch);
       }
     }
-    const occupation = totalCells === 0 ? 0 : Math.round((occupiedCells / totalCells) * 100);
+    const occupation =
+      totalAreaCm2 === 0
+        ? 0
+        : Math.round((occupiedAreaCm2 / totalAreaCm2) * 100);
 
     const byCategory = new Map<string, { units: number; hasLessThanOne?: boolean }>();
     const byPlant = new Map<string, { units: number; hasLessThanOne?: boolean }>();
@@ -88,8 +88,8 @@ export function StatsDashboard() {
 
     return {
       bedCount,
-      totalCells,
-      occupiedCells,
+      totalAreaCm2,
+      occupiedAreaCm2,
       occupation,
       totalPlantUnits,
       speciesCount: byPlant.size,

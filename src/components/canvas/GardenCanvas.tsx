@@ -116,7 +116,7 @@ function FlowInner({ innerRef }: Props) {
           position="bottom-right"
           pannable
           zoomable
-          maskColor="color-mix(in oklab, var(--background) 70%, transparent)"
+          maskColor="color-mix(in oklab, var(--canvas-bg) 70%, transparent)"
           nodeColor="var(--primary)"
           nodeStrokeColor="var(--border)"
           nodeBorderRadius={8}

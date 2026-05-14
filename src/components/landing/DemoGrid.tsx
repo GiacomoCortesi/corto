@@ -66,7 +66,7 @@ function buildState(step: number) {
 
   if (step >= 3) {
     // Step 4 (April): seasonal highlighting like the app
-    // semina = sage, trapianto = sky, raccolto = terracotta
+    // semina = sage, trapianto = ochre, raccolto = terracotta
     // Pomodoro in aprile: semina+trapianto. Basilico: semina. Carota: semina.
     grid[idx(3, 2, cols)] = {
       ...grid[idx(3, 2, cols)],
@@ -180,10 +180,10 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                 cell.dim && "opacity-45",
                 isBedEdge && "border-primary/30",
                 cell.season === "sowing" && "bg-[var(--sage)]/12 border-[var(--sage)]/30",
-                cell.season === "transplanting" && "bg-[var(--sky)]/12 border-[var(--sky)]/30",
+                cell.season === "transplanting" && "bg-[var(--ochre)]/12 border-[var(--ochre)]/30",
                 cell.season === "harvest" && "bg-[var(--terracotta)]/12 border-[var(--terracotta)]/30",
                 cell.season === "sowing+transplanting" &&
-                  "bg-gradient-to-br from-[var(--sage)]/14 to-[var(--sky)]/14 border-primary/25",
+                  "bg-gradient-to-br from-[var(--sage)]/14 to-[var(--ochre)]/14 border-primary/25",
                 cell.ring === "good" && "ring-2 ring-[var(--sage)]/45 bg-[var(--sage-soft)]/55",
                 cell.ring === "bad" && "ring-2 ring-[var(--terracotta)]/55 bg-[var(--terracotta-soft)]/55",
                 cell.ghost && "ring-2 ring-primary/35 bg-[color-mix(in_oklab,var(--primary)_10%,var(--card))]"
@@ -326,8 +326,8 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                 <div className="text-xs text-muted-foreground">Calendario</div>
                 <div className="text-sm font-semibold tracking-tight">Aprile</div>
               </div>
-              <div className="h-8 w-8 rounded-xl bg-[var(--sky-soft)] ring-1 ring-[var(--sky)]/25 grid place-items-center">
-                <span className="text-xs font-semibold text-[color-mix(in_oklab,var(--sky)_70%,black)]">
+              <div className="h-8 w-8 rounded-xl bg-[var(--ochre-soft)] ring-1 ring-[var(--ochre)]/25 grid place-items-center">
+                <span className="text-xs font-semibold text-[color-mix(in_oklab,var(--ochre)_70%,black)]">
                   04
                 </span>
               </div>
@@ -361,7 +361,7 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                 semina
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-sm bg-[var(--sky)] ring-1 ring-border/30" />
+                <span className="h-2.5 w-2.5 rounded-sm bg-[var(--ochre)] ring-1 ring-border/30" />
                 trapianto
               </span>
               <span className="inline-flex items-center gap-1.5">

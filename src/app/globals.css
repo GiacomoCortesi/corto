@@ -44,6 +44,8 @@
   --color-sage-soft: var(--sage-soft);
   --color-terracotta: var(--terracotta);
   --color-terracotta-soft: var(--terracotta-soft);
+  --color-ochre: var(--ochre);
+  --color-ochre-soft: var(--ochre-soft);
   --color-sky: var(--sky);
   --color-sky-soft: var(--sky-soft);
   --radius-sm: calc(var(--radius) * 0.6);
@@ -78,7 +80,7 @@
   --chart-1: oklch(0.64 0.2 355);
   --chart-2: oklch(0.6 0.13 152);
   --chart-3: oklch(0.72 0.14 65);
-  --chart-4: oklch(0.55 0.13 220);
+  --chart-4: oklch(0.65 0.13 82);
   --chart-5: oklch(0.55 0.16 295);
   --radius: 0.85rem;
   --sidebar: oklch(0.985 0.008 345);
@@ -94,11 +96,13 @@
   --sage-soft: oklch(0.93 0.06 152);
   --terracotta: oklch(0.62 0.15 35);
   --terracotta-soft: oklch(0.93 0.06 35);
+  --ochre: oklch(0.65 0.13 82);
+  --ochre-soft: oklch(0.94 0.055 88);
   --sky: oklch(0.55 0.13 220);
   --sky-soft: oklch(0.93 0.05 220);
 
-  --canvas-bg: oklch(0.98 0.008 345);
-  --canvas-dot: oklch(0.86 0.014 340);
+  --canvas-bg: oklch(0.94 0.045 152);
+  --canvas-dot: oklch(0.82 0.07 152);
 }
 
 .dark {
@@ -123,7 +127,7 @@
   --chart-1: oklch(0.74 0.18 355);
   --chart-2: oklch(0.72 0.14 152);
   --chart-3: oklch(0.78 0.14 65);
-  --chart-4: oklch(0.65 0.13 220);
+  --chart-4: oklch(0.76 0.14 86);
   --chart-5: oklch(0.65 0.16 295);
   --sidebar: oklch(0.2 0.014 340);
   --sidebar-foreground: oklch(0.97 0.008 345);
@@ -138,11 +142,13 @@
   --sage-soft: oklch(0.32 0.07 152);
   --terracotta: oklch(0.72 0.15 35);
   --terracotta-soft: oklch(0.34 0.07 35);
+  --ochre: oklch(0.76 0.14 86);
+  --ochre-soft: oklch(0.34 0.065 82);
   --sky: oklch(0.65 0.13 220);
   --sky-soft: oklch(0.32 0.06 220);
 
-  --canvas-bg: oklch(0.19 0.014 340);
-  --canvas-dot: oklch(0.32 0.012 345);
+  --canvas-bg: oklch(0.22 0.035 152);
+  --canvas-dot: oklch(0.32 0.04 152);
 }
 
 @layer base {
@@ -172,13 +178,45 @@ html.lenis body {
 
 /* React Flow look & feel ------------------------------------------------- */
 .react-flow {
-  background: var(--canvas-bg);
+  background-color: var(--canvas-bg);
+  background-image:
+    radial-gradient(
+      ellipse 3px 5px at 30% 40%,
+      color-mix(in oklab, var(--sage) 18%, transparent) 0 45%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 2px 4px at 70% 65%,
+      color-mix(in oklab, var(--sage) 12%, transparent) 0 40%,
+      transparent 50%
+    );
+  background-size: 18px 22px, 24px 28px;
 }
 .react-flow__background {
-  background: var(--canvas-bg);
+  background: transparent;
 }
 .react-flow__background-pattern {
   color: var(--canvas-dot);
+}
+
+.bed-soil-texture {
+  isolation: isolate;
+  background-color: #c69b6d;
+}
+
+.bed-soil-texture::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url("/textures/bed-soil.svg");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+.dark .bed-soil-texture::before {
+  filter: brightness(0.78) saturate(0.92);
 }
 .react-flow__controls {
   border-radius: var(--radius);

@@ -151,22 +151,17 @@ export type Plant = {
 };
 
 /**
- * Block of same-species plants arranged on a `plantCols x plantRows`
- * sub-grid with spacing `spacingCm`. The convention is defined by
- * `spacingMode` (default: `center-to-center`), and `arrangement` controls
- * the layout (default: `square`).
- *
- * `anchor` indicates the top-left cell occupied in the bed grid (cells are
- * `Bed.cellSizeCm` cm per side, default 30).
+ * Block of same-species plants on a bed. Physical placement uses metric
+ * coordinates (`positionCm`, `sizeCm`). Spacing and arrangement drive density
+ * estimates; grid-aligned UI derives cell spans via `geometry.ts`.
  */
 export type PlantPatch = {
   id: string;
   plantId: string;
-  anchor: { col: number; row: number };
-  /** Number of plants across (>= 1) */
-  plantCols: number;
-  /** Number of plants down (>= 1) */
-  plantRows: number;
+  /** Top-left corner inside the bed, in cm from bed origin */
+  positionCm: { x: number; y: number };
+  /** Physical footprint on the bed, in cm */
+  sizeCm: { width: number; height: number };
   /** Override species spacing (cm) */
   spacingCm?: number;
   /** Override spacing convention */
@@ -179,10 +174,8 @@ export type Bed = {
   id: string;
   name: string;
   position: { x: number; y: number };
-  cols: number;
-  rows: number;
-  /** Physical side length of a cell in cm (default 30) */
-  cellSizeCm?: number;
+  widthCm: number;
+  heightCm: number;
   patches: PlantPatch[];
 };
 

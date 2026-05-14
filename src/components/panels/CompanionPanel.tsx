@@ -5,7 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { useGardenStore } from "@/lib/store";
 import { plantById } from "@/lib/data/plants";
 import { uniqueCompanionPairs } from "@/lib/utils/companions";
+import { PlantCompanionCatalog } from "@/components/panels/PlantCompanionCatalog";
 import { CheckCircle2, AlertTriangle, Leaf } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export function CompanionPanel() {
   const beds = useGardenStore((s) => s.beds);
@@ -14,6 +16,14 @@ export function CompanionPanel() {
   const targetBed =
     selection && (selection.kind === "bed" || selection.kind === "plant")
       ? beds.find((b) => b.id === selection.bedId)
+      : null;
+
+  const selectedPlant =
+    selection?.kind === "plant" && targetBed
+      ? plantById(
+          targetBed.patches.find((p) => p.id === selection.patchId)?.plantId ??
+            "",
+        )
       : null;
 
   if (!targetBed) {
@@ -73,6 +83,18 @@ export function CompanionPanel() {
           ))}
         </div>
       )}
+      {selectedPlant ? (
+        <>
+          <Separator />
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-2">
+              Dal catalogo · {selectedPlant.name}
+            </div>
+            <PlantCompanionCatalog plant={selectedPlant} />
+          </div>
+        </>
+      ) : null}
+
     </div>
   );
 }

@@ -19,9 +19,8 @@ test("scoreCandidatesForPatch: prefers legumes after high-demand crop", () => {
   const patch = {
     id: "patch1",
     plantId: "pomodoro", // high demand
-    anchor: { col: 0, row: 0 },
-    plantCols: 1,
-    plantRows: 1,
+    positionCm: { x: 0, y: 0 },
+    sizeCm: { width: 30, height: 30 },
   };
 
   const candidates = scoreCandidatesForPatch({

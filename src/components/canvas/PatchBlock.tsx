@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useDraggable } from "@dnd-kit/core";
+import { useDndContext, useDraggable } from "@dnd-kit/core";
 import { cn } from "@/lib/utils";
 import type { Bed, PlantPatch } from "@/lib/types";
 import {
@@ -20,10 +20,12 @@ import {
   arrangementLabel,
   patchDensitySummaryForUI,
   patchEffectiveArrangement,
-  patchOccupiedCells,
   patchPlantCount,
+  patchRectPx,
   patchSpacingCm,
 } from "@/lib/utils/spacing";
+import { patchSizeFromResizeDelta } from "@/lib/utils/geometry";
+import { toast } from "sonner";
 
 type Props = {
   bedId: string;
@@ -70,7 +72,13 @@ export function PatchBlock({
 }: Props) {
   const setSelection = useGardenStore((s) => s.setSelection);
   const removePatch = useGardenStore((s) => s.removePatch);
+  const resizePatchCm = useGardenStore((s) => s.resizePatchCm);
   const selection = useGardenStore((s) => s.selection);
+
+  const [resizePreview, setResizePreview] = React.useState<
+    PlantPatch["sizeCm"] | null
+  >(null);
+  const isResizing = resizePreview !== null;
 
   const {
     attributes,
@@ -83,14 +91,23 @@ export function PatchBlock({
     data: { kind: "patch", bedId, patchId: patch.id },
   });
 
+  const { active } = useDndContext();
+  const catalogDragActive = Boolean(
+    active?.id && String(active.id).startsWith("plant:"),
+  );
+
   const plant = plantById(patch.plantId);
   if (!plant) return null;
 
-  const occupied = patchOccupiedCells(patch, bed, plant);
-  const density = patchDensitySummaryForUI(patch, bed, plant);
-  const spacing = patchSpacingCm(patch, plant);
-  const arrangement = patchEffectiveArrangement(patch, plant);
-  const count = patchPlantCount(patch);
+  const renderPatch = resizePreview
+    ? { ...patch, sizeCm: resizePreview }
+    : patch;
+
+  const density = patchDensitySummaryForUI(renderPatch, bed, plant);
+  const spacing = patchSpacingCm(renderPatch, plant);
+  const arrangement = patchEffectiveArrangement(renderPatch, plant);
+  const rect = patchRectPx(renderPatch);
+  const count = patchPlantCount(renderPatch, bed, plant);
 
   const isSelected =
     selection?.kind === "plant" &&
@@ -107,6 +124,51 @@ export function PatchBlock({
     removePatch(bedId, patch.id);
   };
 
+  const onResizePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startSize = { ...patch.sizeCm };
+    const handle = e.currentTarget;
+    handle.setPointerCapture(e.pointerId);
+
+    const onMove = (ev: PointerEvent) => {
+      const delta = { x: ev.clientX - startX, y: ev.clientY - startY };
+      const next = patchSizeFromResizeDelta(
+        { ...patch, sizeCm: startSize },
+        bed,
+        delta,
+      );
+      setResizePreview(next);
+    };
+
+    const onEnd = (ev: PointerEvent) => {
+      const delta = { x: ev.clientX - startX, y: ev.clientY - startY };
+      const next = patchSizeFromResizeDelta(
+        { ...patch, sizeCm: startSize },
+        bed,
+        delta,
+      );
+      setResizePreview(null);
+      const ok = resizePatchCm(bedId, patch.id, next);
+      if (!ok) {
+        toast.error("Dimensione rifiutata", {
+          description: "Sovrappone un altro patch o esce dall'aiuola.",
+          duration: 1800,
+        });
+      }
+      handle.releasePointerCapture(ev.pointerId);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onEnd);
+      window.removeEventListener("pointercancel", onEnd);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onEnd);
+    window.addEventListener("pointercancel", onEnd);
+  };
+
   const isMulti = count > 1;
 
   return (
@@ -114,38 +176,44 @@ export function PatchBlock({
       ref={setNodeRef}
       onClick={handleClick}
       className={cn(
-        "group relative rounded-md border-2 border-border transition-all duration-150",
+        "group relative rounded-md border-0 transition-[opacity,box-shadow] duration-150",
         "flex flex-col items-center justify-center select-none cursor-pointer overflow-hidden",
         seasonMode === "none" && "bg-card",
         seasonMode === "sowing" && "bg-[var(--sage-soft)]",
-        seasonMode === "transplanting" && "bg-[var(--sky-soft)]",
+        seasonMode === "transplanting" && "bg-[var(--ochre-soft)]",
         seasonMode === "harvest" && "bg-[var(--terracotta-soft)]",
         seasonMode === "sowing+transplanting" &&
-          "bg-gradient-to-br from-[var(--sage-soft)] to-[var(--sky-soft)]",
+          "bg-gradient-to-br from-[var(--sage-soft)] to-[var(--ochre-soft)]",
         seasonMode === "sowing+harvest" &&
           "bg-gradient-to-br from-[var(--sage-soft)] to-[var(--terracotta-soft)]",
         seasonMode === "transplanting+harvest" &&
-          "bg-gradient-to-br from-[var(--sky-soft)] to-[var(--terracotta-soft)]",
+          "bg-gradient-to-br from-[var(--ochre-soft)] to-[var(--terracotta-soft)]",
         seasonMode === "all" &&
-          "bg-gradient-to-br from-[var(--sage-soft)] via-[var(--sky-soft)] to-[var(--terracotta-soft)]",
+          "bg-gradient-to-br from-[var(--sage-soft)] via-[var(--ochre-soft)] to-[var(--terracotta-soft)]",
         relation === "good" && "ring-2 ring-[var(--sage)]/60",
         relation === "bad" && "ring-2 ring-[var(--terracotta)]/70",
         isSelected && "ring-2 ring-primary",
         outOfSeason && "opacity-40",
         isDragging && "opacity-30 ring-2 ring-primary",
+        isResizing && "ring-2 ring-primary/70",
+        catalogDragActive && "pointer-events-none",
       )}
       style={{
-        gridColumn: `${patch.anchor.col + 1} / span ${occupied.cols}`,
-        gridRow: `${patch.anchor.row + 1} / span ${occupied.rows}`,
+        position: "absolute",
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+        zIndex: isDragging || isResizing ? 30 : 2,
         transform: transform
           ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
           : undefined,
-        zIndex: isDragging ? 30 : undefined,
+        transition: "none",
       }}
     >
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex flex-col items-center justify-center gap-0.5 px-1 plant-pop pointer-events-auto w-full h-full">
+          <div className="flex flex-col items-center justify-center gap-0.5 px-1 pointer-events-auto w-full h-full">
             <span
               className="leading-none"
               style={{
@@ -182,8 +250,7 @@ export function PatchBlock({
             )}
           </div>
           <div className="text-[10px] font-mono tabular-nums text-muted-foreground leading-snug">
-            {patch.plantCols}×{patch.plantRows} in griglia · {spacing} cm{" "}
-            · {arrangementLabel(arrangement)}
+            {spacing} cm · {arrangementLabel(arrangement)}
           </div>
           <div className="mt-1.5 border-t border-background/25 pt-1.5 text-[10px] leading-snug opacity-95">
             {seasonModeHint(seasonMode, seasonMonth)}
@@ -216,6 +283,20 @@ export function PatchBlock({
       >
         <GripVertical className="size-2.5" />
       </button>
+
+      <button
+        type="button"
+        onPointerDown={onResizePointerDown}
+        onClick={(e) => e.stopPropagation()}
+        className={cn(
+          "absolute bottom-0 right-0 z-10 size-3 translate-x-1/2 translate-y-1/2",
+          "rounded-sm bg-card/90 cursor-se-resize nodrag nopan shadow-sm",
+          "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
+          isSelected && "opacity-100",
+          isResizing && "opacity-100",
+        )}
+        aria-label="Ridimensiona patch"
+      />
 
       <button
         type="button"

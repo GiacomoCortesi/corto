@@ -2309,6 +2309,32 @@ export const MONTHS_LONG = [
   "Dicembre",
 ];
 
+/** Compact Italian month ranges, e.g. [3,4,5] → "mar-mag". */
+export function formatMonthRanges(months: number[]): string {
+  if (months.length === 0) return "";
+  const sorted = [...months].sort((a, b) => a - b);
+  const parts: string[] = [];
+  let start = sorted[0];
+  let end = sorted[0];
+
+  const flush = () => {
+    const a = MONTHS[start - 1].toLowerCase();
+    const b = MONTHS[end - 1].toLowerCase();
+    parts.push(start === end ? a : `${a}-${b}`);
+  };
+
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i] === end + 1) {
+      end = sorted[i];
+    } else {
+      flush();
+      start = end = sorted[i];
+    }
+  }
+  flush();
+  return parts.join(", ");
+}
+
 export type PlantRotationMeta = {
   cropFamily: CropFamily;
   rotationGroup: RotationGroup;

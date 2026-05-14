@@ -14,9 +14,7 @@ import { Trash2, Grid3x3, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useGardenStore } from "@/lib/store";
 import type { Bed } from "@/lib/types";
-import { useDndContext } from "@dnd-kit/core";
-import { DroppableCell } from "@/components/canvas/DroppableCell";
-import { PatchBlock } from "@/components/canvas/PatchBlock";
+import { BedPlotArea } from "@/components/canvas/BedPlotArea";
 import { patchRelationsForBed } from "@/lib/utils/companions";
 import {
   Popover,
@@ -24,19 +22,8 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { PlantTypeSummary } from "@/components/panels/PlantTypeSummary";
-import {
-  plantActiveInMonth,
-  plantById,
-  plantSeasonModeForMonth,
-} from "@/lib/data/plants";
-import {
-  PX_PER_CM,
-  bedCellSizeCm,
-  bedCellSizePx,
-  patchCellRect,
-} from "@/lib/utils/spacing";
+import { bedPlotSizePx, PX_PER_CM } from "@/lib/utils/spacing";
 
-const PADDING_PX = 12;
 const HEADER_PX = 40;
 
 type BedNodeData = { bed: Bed };
@@ -51,49 +38,15 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
   const [name, setName] = React.useState(bed.name);
   React.useEffect(() => setName(bed.name), [bed.name]);
 
-  const patchRelations = React.useMemo(() => patchRelationsForBed(bed), [bed]);
-
-  // Track the patch currently being dragged (if any). When the user drags
-  // a patch over the bed, we want its own cells to remain droppable so it
-  // can be dropped on its current position or overlapping its old footprint.
-  const { active } = useDndContext();
-  const movingPatchId = React.useMemo(() => {
-    const id = active?.id ? String(active.id) : "";
-    if (!id.startsWith("patch:")) return null;
-    const [, dragBedId, patchId] = id.split(":");
-    return dragBedId === bed.id ? patchId : null;
-  }, [active, bed.id]);
-
-  const coveredCells = React.useMemo(() => {
-    const set = new Set<number>();
-    for (const patch of bed.patches) {
-      if (patch.id === movingPatchId) continue;
-      const plant = plantById(patch.plantId);
-      if (!plant) continue;
-      const rect = patchCellRect(patch, bed, plant);
-      for (let row = rect.row0; row <= rect.row1; row++) {
-        for (let col = rect.col0; col <= rect.col1; col++) {
-          if (row < 0 || col < 0 || row >= bed.rows || col >= bed.cols) continue;
-          set.add(row * bed.cols + col);
-        }
-      }
-    }
-    return set;
-  }, [bed, movingPatchId]);
-
-  // Cell size derived from the bed's metric cellSizeCm. Patches are still
-  // positioned on the cell grid via CSS Grid spanning, so changing
-  // cellSizeCm scales the entire bed proportionally without breaking
-  // patch placement. PADDING_PX stays a fixed UI gutter.
-  const cellPx = bedCellSizePx(bed);
+  const plotSize = bedPlotSizePx(bed);
 
   const conflictsCount = React.useMemo(() => {
     let bad = 0;
-    patchRelations.forEach((v) => {
+    patchRelationsForBed(bed).forEach((v) => {
       if (v === "bad") bad++;
     });
     return bad;
-  }, [patchRelations]);
+  }, [bed]);
 
   const commitName = () => {
     const next = name.trim() || bed.name;
@@ -111,9 +64,8 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
         conflictsCount > 0 && !selected && "ring-1 ring-[var(--terracotta)]/50",
       )}
       onClick={() => setSelection({ kind: "bed", bedId: bed.id })}
-      style={{ minWidth: bed.cols * cellPx + PADDING_PX * 2 }}
+      style={{ width: plotSize.width }}
     >
-      {/* Drag handle (header) */}
       <div className="bed-drag-handle h-10 px-3 flex items-center gap-2 border-b border-border cursor-grab active:cursor-grabbing">
         <Grid3x3 className="size-3.5 text-muted-foreground shrink-0" />
         <Input
@@ -130,10 +82,10 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
         />
         <span
           className="text-[10px] font-mono text-muted-foreground tabular-nums shrink-0"
-          title={`${bed.cols}×${bed.rows} celle da ${bedCellSizeCm(bed)} cm`}
+          title={`${bed.widthCm}×${bed.heightCm} cm`}
         >
-          {(bed.cols * bedCellSizeCm(bed) / 100).toFixed(2)}×
-          {(bed.rows * bedCellSizeCm(bed) / 100).toFixed(2)} m
+          {(bed.widthCm / 100).toFixed(2)}×
+          {(bed.heightCm / 100).toFixed(2)} m
         </span>
         <Popover>
           <PopoverTrigger asChild>
@@ -181,55 +133,11 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
         </Tooltip>
       </div>
 
-      {/* Body */}
-      <div
-        className="p-3 grid gap-1.5 nodrag nopan"
-        style={{
-          gridTemplateColumns: `repeat(${bed.cols}, ${cellPx}px)`,
-          gridTemplateRows: `repeat(${bed.rows}, ${cellPx}px)`,
-        }}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        {Array.from({ length: bed.cols * bed.rows }, (_, idx) => {
-          if (coveredCells.has(idx)) return null;
-          const col = idx % bed.cols;
-          const row = Math.floor(idx / bed.cols);
-          return (
-            <DroppableCell
-              key={`${id}-cell-${idx}`}
-              bedId={bed.id}
-              cellIndex={idx}
-              style={{
-                gridColumn: col + 1,
-                gridRow: row + 1,
-              }}
-            />
-          );
-        })}
-
-        {bed.patches.map((patch) => {
-          const plant = plantById(patch.plantId);
-          const outOfSeason =
-            plant != null && !plantActiveInMonth(plant, seasonFilter);
-          const effectiveMonth = seasonFilter;
-          const seasonMode =
-            plant != null
-              ? plantSeasonModeForMonth(plant, effectiveMonth)
-              : "none";
-          return (
-            <PatchBlock
-              key={`${id}-patch-${patch.id}`}
-              bedId={bed.id}
-              bed={bed}
-              patch={patch}
-              relation={patchRelations.get(patch.id) ?? "none"}
-              outOfSeason={outOfSeason}
-              seasonMonth={effectiveMonth}
-              seasonMode={seasonMode}
-            />
-          );
-        })}
-      </div>
+      <BedPlotArea
+        bed={bed}
+        nodeId={id}
+        seasonFilter={seasonFilter}
+      />
 
       {conflictsCount > 0 ? (
         <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wide text-[var(--terracotta)]">
@@ -237,7 +145,6 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
         </div>
       ) : null}
 
-      {/* Hide default resize control; sizing handled via right panel */}
       <NodeResizeControl
         style={{ display: "none" }}
         minWidth={0}
@@ -247,4 +154,4 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
   );
 }
 
-export const BED_NODE_DIMENSIONS = { PX_PER_CM, PADDING_PX, HEADER_PX };
+export const BED_NODE_DIMENSIONS = { PX_PER_CM, HEADER_PX };

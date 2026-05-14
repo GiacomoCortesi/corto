@@ -8,6 +8,7 @@ import {
   DragOverlay,
   DragStartEvent,
   PointerSensor,
+  pointerWithin,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
@@ -17,7 +18,11 @@ import { RightPanel } from "@/components/panels/RightPanel";
 import { SetupWizard } from "@/components/dialogs/SetupWizard";
 import { useGardenStore } from "@/lib/store";
 import { plantById } from "@/lib/data/plants";
-import { cellIndexToAnchor } from "@/lib/utils/spacing";
+import {
+  resolveCatalogDropPositionCm,
+  resolveDropBedId,
+} from "@/lib/utils/drag-drop";
+import { patchPositionFromDragDelta } from "@/lib/utils/spacing";
 import { toast } from "sonner";
 import { Sprout } from "lucide-react";
 import { track } from "@/lib/analytics";
@@ -33,8 +38,8 @@ export default function AppPage() {
   const resetGarden = useGardenStore((s) => s.resetGarden);
   const beds = useGardenStore((s) => s.beds);
   const addBed = useGardenStore((s) => s.addBed);
-  const addPlantToBed = useGardenStore((s) => s.addPlantToBed);
-  const movePatch = useGardenStore((s) => s.movePatch);
+  const addPlantToBedAtCm = useGardenStore((s) => s.addPlantToBedAtCm);
+  const movePatchCm = useGardenStore((s) => s.movePatchCm);
   const undo = useGardenStore((s) => s.undo);
   const redo = useGardenStore((s) => s.redo);
 
@@ -63,27 +68,18 @@ export default function AppPage() {
 
   const onDragEnd = (e: DragEndEvent) => {
     setActivePlantId(null);
-    const { active, over } = e;
+    const { active, delta } = e;
     const activeId = String(active.id);
-    if (!over) return;
 
-    const overId = String(over.id);
-    if (!overId.startsWith("cell:")) return;
-    const data = over.data.current as { bedId?: string; cellIndex?: number } | undefined;
-    if (!data?.bedId || data.cellIndex === undefined) return;
-
-    // Drag to move an existing patch
     if (activeId.startsWith("patch:")) {
       const [, dragBedId, patchId] = activeId.split(":");
       if (!dragBedId || !patchId) return;
-      if (dragBedId !== data.bedId) {
-        toast.error("Sposta solo all'interno della stessa aiuola");
-        return;
-      }
       const bed = useGardenStore.getState().beds.find((b) => b.id === dragBedId);
       if (!bed) return;
-      const anchor = cellIndexToAnchor(data.cellIndex, bed.cols);
-      const moved = movePatch(dragBedId, patchId, anchor);
+      const patch = bed.patches.find((p) => p.id === patchId);
+      if (!patch) return;
+      const next = patchPositionFromDragDelta(patch, bed, delta);
+      const moved = movePatchCm(dragBedId, patchId, next);
       if (!moved) {
         toast.error("Spazio non disponibile", {
           description: "Il patch non entra o si sovrappone a un altro.",
@@ -92,21 +88,32 @@ export default function AppPage() {
       return;
     }
 
-    // Drag a new plant from the catalog
-    const plantId = (active.data.current as { plantId?: string } | undefined)?.plantId;
-    if (!plantId) return;
+    if (activeId.startsWith("plant:")) {
+      const plantId = (active.data.current as { plantId?: string } | undefined)
+        ?.plantId;
+      if (!plantId) return;
 
-    const result = addPlantToBed(data.bedId, plantId, data.cellIndex);
-    const plant = plantById(plantId);
-    if (result && plant) {
-      toast.success(`${plant.emoji} ${plant.name} piantato`, {
-        description: "Trascina ancora per riempire l'aiuola.",
-        duration: 1800,
-      });
-    } else if (!result) {
-      toast.error("Spazio non disponibile", {
-        description: "Sovrappone un altro patch o esce dall'aiuola.",
-      });
+      const bedId = resolveDropBedId(e);
+      if (!bedId) return;
+
+      const bed = useGardenStore.getState().beds.find((b) => b.id === bedId);
+      if (!bed) return;
+
+      const positionCm = resolveCatalogDropPositionCm(e, bed, plantId);
+      if (!positionCm) return;
+
+      const result = addPlantToBedAtCm(bedId, plantId, positionCm);
+      const plant = plantById(plantId);
+      if (result && plant) {
+        toast.success(`${plant.emoji} ${plant.name} piantato`, {
+          description: "Trascina ancora per riempire l'aiuola.",
+          duration: 1800,
+        });
+      } else if (!result) {
+        toast.error("Spazio non disponibile", {
+          description: "Sovrappone un altro patch o esce dall'aiuola.",
+        });
+      }
     }
   };
 
@@ -131,15 +138,16 @@ export default function AppPage() {
 
   return (
     <div className="flex flex-col h-dvh">
-      <Topbar canvasRef={canvasRef} onReset={resetGarden} />
-
       {hydrated ? (
         <DndContext
           id="corto-dnd"
           sensors={sensors}
+          collisionDetection={pointerWithin}
           onDragStart={onDragStart}
           onDragEnd={onDragEnd}
         >
+          <Topbar canvasRef={canvasRef} onReset={resetGarden} />
+
           <div className="flex-1 min-h-0 flex">
             <PlantCatalog />
             <main className="flex-1 min-w-0 flex flex-col">

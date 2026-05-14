@@ -3,7 +3,7 @@ import { plantById, PLANTS } from "@/lib/data/plants";
 import type { EvolutionGardenSnapshot } from "@/lib/evolution-plan/types";
 import type { RotationCandidate, RotationStrategy } from "@/lib/evolution-plan/scoring";
 import { scoreCandidatesForPatch } from "@/lib/evolution-plan/scoring";
-import { bedCellSizeCm } from "@/lib/utils/spacing";
+import { neighborPlantIdsForPatch } from "@/lib/utils/companions";
 
 function isoDate(ts: number): string {
   const d = new Date(ts);
@@ -65,10 +65,9 @@ export function buildEvolutionContext(args: {
   const allPlantIds = PLANTS.map((p) => p.id);
 
   for (const bed of snapshot.beds) {
-    const cell = bedCellSizeCm(bed as any);
-    const w = (bed.cols * cell) / 100;
-    const h = (bed.rows * cell) / 100;
-    lines.push(`### Aiuola "${bed.name}" [${bed.id}] — ${w.toFixed(2)}x${h.toFixed(2)} m, cella ${cell} cm`);
+    const w = bed.widthCm / 100;
+    const h = bed.heightCm / 100;
+    lines.push(`### Aiuola "${bed.name}" [${bed.id}] — ${w.toFixed(2)}x${h.toFixed(2)} m`);
 
     if (bed.patches.length === 0) {
       lines.push("  (nessun patch piantato)");
@@ -80,7 +79,7 @@ export function buildEvolutionContext(args: {
       if (!plant) continue;
       patchIndex.set(patch.id, { bedId: bed.id, plantId: patch.plantId });
 
-      lines.push(`- patch [${patch.id}] (${patch.plantCols}x${patch.plantRows}) ${plantSummary(plant)}`);
+      lines.push(`- patch [${patch.id}] (${Math.round(patch.sizeCm.width)}×${Math.round(patch.sizeCm.height)} cm) ${plantSummary(plant)}`);
 
       const candidates = scoreCandidatesForPatch({
         bed: bed as any,
@@ -88,6 +87,7 @@ export function buildEvolutionContext(args: {
         events: snapshot.events as any,
         allPlantIds,
         ctx: { nowMs, horizonMonths, strategy },
+        neighborPlantIds: neighborPlantIdsForPatch(bed as any, patch as any),
       });
       candidatesByPatchId.set(patch.id, candidates);
     }

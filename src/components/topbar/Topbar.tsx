@@ -44,8 +44,10 @@ import { PlantTypeSummary } from "@/components/panels/PlantTypeSummary";
 import { track } from "@/lib/analytics";
 import { SatispayDonateDialog } from "@/components/support/SatispayDonateDialog";
 import { GitHubIcon } from "@/components/icons/GitHubIcon";
-import { PlantCatalogContent } from "@/components/sidebar/PlantCatalog";
+import { FruitPlusIcon } from "@/components/icons/FruitPlusIcon";
+import { AddPlantDialog } from "@/components/dialogs/AddPlantDialog";
 import { RightPanelContent } from "@/components/panels/RightPanel";
+import { PlantCatalogContent } from "@/components/sidebar/PlantCatalog";
 
 type Props = {
   canvasRef: React.RefObject<HTMLDivElement | null>;
@@ -62,6 +64,7 @@ export function Topbar({ canvasRef, onReset }: Props) {
   const future = useGardenStore((s) => s.future.length);
 
   const [name, setName] = React.useState(meta.name);
+  const [addPlantOpen, setAddPlantOpen] = React.useState(false);
   React.useEffect(() => setName(meta.name), [meta.name]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -159,11 +162,23 @@ export function Topbar({ canvasRef, onReset }: Props) {
       <div className="flex-1" />
 
       <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Aggiungi frutta e verdura all'aiuola"
+          title="Aggiungi all'aiuola"
+          className="relative"
+          onClick={() => setAddPlantOpen(true)}
+        >
+          <FruitPlusIcon />
+        </Button>
+        <AddPlantDialog open={addPlantOpen} onOpenChange={setAddPlantOpen} />
+
         <div className="flex items-center gap-1 md:hidden">
           <Sheet>
             <SheetTrigger
               render={
-                <Button variant="ghost" size="icon" aria-label="Apri catalogo piante" />
+                <Button variant="ghost" size="icon" aria-label="Apri stagione e calendario" />
               }
             >
               <PanelLeft className="size-4" />

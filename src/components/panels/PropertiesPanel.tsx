@@ -39,16 +39,14 @@ import type {
 } from "@/lib/types";
 import {
   MAX_BED_SIDE_CM,
-  bedCellSizeCm,
-  maxGridDimForCellSizeCm,
-  patchCellRect,
-  patchEffectiveArrangement,
+  bedAreaCm2,
   patchDensitySummaryForUI,
-  patchFootprintCm,
-  patchOccupiedCells,
+  patchEffectiveArrangement,
+  patchOccupiedAreaCm2,
   patchSpacingCm,
-  perCellLabelForCellSize,
+  perSquareMeterLabelForPlant,
 } from "@/lib/utils/spacing";
+import { MIN_BED_SIDE_CM, quantizeCm } from "@/lib/utils/geometry";
 import { cn } from "@/lib/utils";
 
 /**
@@ -75,7 +73,7 @@ function PlantSeasonTimeline({ plant }: { plant: Plant }) {
           </span>
           <span className="flex items-center gap-1.5">
             <span
-              className="size-2 rounded-sm border border-border/50 bg-[var(--sky)]"
+              className="size-2 rounded-sm border border-border/50 bg-[var(--ochre)]"
               aria-hidden
             />
             <span>Trapianto</span>
@@ -106,20 +104,20 @@ function PlantSeasonTimeline({ plant }: { plant: Plant }) {
             "h-3 w-full rounded-sm border border-border/40 transition-shadow ";
           if (inS && inT && inH) {
             barClass +=
-              "bg-gradient-to-br from-[var(--sage)]/90 via-[var(--sky)]/90 to-[var(--terracotta)]/90";
+              "bg-gradient-to-br from-[var(--sage)]/90 via-[var(--ochre)]/90 to-[var(--terracotta)]/90";
           } else if (inS && inT) {
             barClass +=
-              "bg-gradient-to-br from-[var(--sage)]/90 to-[var(--sky)]/90";
+              "bg-gradient-to-br from-[var(--sage)]/90 to-[var(--ochre)]/90";
           } else if (inS && inH) {
             barClass +=
               "bg-gradient-to-br from-[var(--sage)]/90 to-[var(--terracotta)]/90";
           } else if (inT && inH) {
             barClass +=
-              "bg-gradient-to-br from-[var(--sky)]/90 to-[var(--terracotta)]/90";
+              "bg-gradient-to-br from-[var(--ochre)]/90 to-[var(--terracotta)]/90";
           } else if (inS) {
             barClass += "bg-[var(--sage)]/80";
           } else if (inT) {
-            barClass += "bg-[var(--sky)]/80";
+            barClass += "bg-[var(--ochre)]/80";
           } else if (inH) {
             barClass += "bg-[var(--terracotta)]/80";
           } else {
@@ -354,11 +352,10 @@ export function PropertiesPanel() {
   const selection = useGardenStore((s) => s.selection);
   const beds = useGardenStore((s) => s.beds);
   const renameBed = useGardenStore((s) => s.renameBed);
-  const resizeBed = useGardenStore((s) => s.resizeBed);
-  const setBedCellSize = useGardenStore((s) => s.setBedCellSize);
+  const resizeBedCm = useGardenStore((s) => s.resizeBedCm);
   const removeBed = useGardenStore((s) => s.removeBed);
   const removePatch = useGardenStore((s) => s.removePatch);
-  const resizePatch = useGardenStore((s) => s.resizePatch);
+  const resizePatchCm = useGardenStore((s) => s.resizePatchCm);
   const setPatchSpacing = useGardenStore((s) => s.setPatchSpacing);
   const setPatchArrangement = useGardenStore((s) => s.setPatchArrangement);
 
@@ -373,20 +370,19 @@ export function PropertiesPanel() {
       <BedProperties
         bed={bed}
         onRename={renameBed}
-        onResize={resizeBed}
-        onRemove={removeBed}
-        onCellSizeChange={(id, cellSizeCm) => {
-          const dropped = setBedCellSize(id, cellSizeCm);
+        onResize={(id, widthCm, heightCm) => {
+          const dropped = resizeBedCm(id, widthCm, heightCm);
           if (dropped > 0) {
             toast.warning(
               `${dropped} ${dropped === 1 ? "patch rimosso" : "patch rimossi"}`,
               {
                 description:
-                  "Il riscalamento ha causato collisioni o uscite dalla griglia.",
+                  "Il ridimensionamento ha rimosso patch fuori dall'aiuola o in collisione.",
               },
             );
           }
         }}
+        onRemove={removeBed}
       />
     );
   }
@@ -395,10 +391,6 @@ export function PropertiesPanel() {
   const patch = bed?.patches.find((p) => p.id === selection.patchId);
   const plant = patch ? plantById(patch.plantId) : null;
   if (!bed || !patch || !plant) return <EmptyState title="Pianta non trovata" />;
-  const cellNumber = patch.anchor.row * bed.cols + patch.anchor.col + 1;
-  const bedCell = bedCellSizeCm(bed);
-  const bedWidthM = (bed.cols * bedCell) / 100;
-  const bedHeightM = (bed.rows * bedCell) / 100;
 
   return (
     <div className="p-4 space-y-4">
@@ -416,7 +408,7 @@ export function PropertiesPanel() {
               {plant.category}
             </Badge>
             <Badge variant="outline" className="font-mono text-[10px]">
-              {perCellLabelForCellSize(plant, bedCell)}
+              {perSquareMeterLabelForPlant(plant)}
             </Badge>
           </div>
         </div>
@@ -424,23 +416,13 @@ export function PropertiesPanel() {
 
       <Separator />
 
-      <KV icon={<MapPin className="size-3.5" />} label="Aiuola">
-        {bed.name} ·{" "}
-        <span className="font-mono tabular-nums">
-          {bedWidthM.toFixed(2)}×{bedHeightM.toFixed(2)} m
-        </span>{" "}
-        · cella #{cellNumber}
-      </KV>
-
-      <Separator />
-
       <PatchComposition
         bed={bed}
         patch={patch}
         plant={plant}
-        onResize={(cols, rows) =>
+        onResize={(sizeCm) =>
           notifyOnReject(
-            resizePatch(bed.id, patch.id, cols, rows),
+            resizePatchCm(bed.id, patch.id, sizeCm),
             "Dimensione rifiutata",
           )
         }
@@ -461,66 +443,6 @@ export function PropertiesPanel() {
       <Separator />
 
       <PlantSeasonTimeline plant={plant} />
-
-      <Separator />
-
-      <div>
-        <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1.5">
-          Compagne consigliate
-        </div>
-        <ul className="space-y-1.5">
-          {plant.companions.length === 0 ? (
-            <li className="text-xs text-muted-foreground">—</li>
-          ) : (
-            plant.companions.map((entry) => {
-              const p = plantById(entry.plantId);
-              const emoji = p?.emoji ?? "🌱";
-              return (
-                <li
-                  key={entry.plantId}
-                  className="rounded-md border border-border/60 bg-muted/20 px-2 py-1.5"
-                >
-                  <div className="text-[11px] font-medium">
-                    {emoji} {entry.name}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                    {entry.reason}
-                  </p>
-                </li>
-              );
-            })
-          )}
-        </ul>
-      </div>
-
-      <div>
-        <div className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground mb-1.5">
-          Da evitare
-        </div>
-        <ul className="space-y-1.5">
-          {plant.antagonists.length === 0 ? (
-            <li className="text-xs text-muted-foreground">—</li>
-          ) : (
-            plant.antagonists.map((entry) => {
-              const p = plantById(entry.plantId);
-              const emoji = p?.emoji ?? "🌱";
-              return (
-                <li
-                  key={entry.plantId}
-                  className="rounded-md border border-[var(--terracotta)]/35 bg-[var(--terracotta-soft)]/25 px-2 py-1.5"
-                >
-                  <div className="text-[11px] font-medium text-[var(--terracotta)]">
-                    {emoji} {entry.name}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
-                    {entry.reason}
-                  </p>
-                </li>
-              );
-            })
-          )}
-        </ul>
-      </div>
 
       {plant.fertilizer || plant.treatments ? (
         <>
@@ -544,40 +466,32 @@ export function PropertiesPanel() {
   );
 }
 
-const CELL_SIZE_OPTIONS: number[] = [5, 10, 15, 30, 60];
-
 function BedProperties({
   bed,
   onRename,
   onResize,
   onRemove,
-  onCellSizeChange,
 }: {
   bed: Bed;
   onRename: (id: string, name: string) => void;
-  onResize: (id: string, cols: number, rows: number) => void;
+  onResize: (id: string, widthCm: number, heightCm: number) => void;
   onRemove: (id: string) => void;
-  onCellSizeChange: (id: string, cellSizeCm: number) => void;
 }) {
   const [name, setName] = React.useState(bed.name);
   React.useEffect(() => setName(bed.name), [bed.name]);
 
-  const cell = bedCellSizeCm(bed);
-  const widthCm = bed.cols * cell;
-  const heightCm = bed.rows * cell;
-
-  const occupied = React.useMemo(() => {
-    let cells = 0;
+  const occupiedAreaCm2 = React.useMemo(() => {
+    let area = 0;
     for (const patch of bed.patches) {
-      const plant = plantById(patch.plantId);
-      if (!plant) continue;
-      const o = patchOccupiedCells(patch, bed, plant);
-      cells += o.cols * o.rows;
+      area += patchOccupiedAreaCm2(patch);
     }
-    return cells;
+    return area;
   }, [bed]);
-  const total = bed.cols * bed.rows;
-  const pct = total === 0 ? 0 : Math.round((occupied / total) * 100);
+  const totalAreaCm2 = bedAreaCm2(bed);
+  const pct =
+    totalAreaCm2 === 0
+      ? 0
+      : Math.round((occupiedAreaCm2 / totalAreaCm2) * 100);
 
   return (
     <div className="p-4 space-y-4">
@@ -596,29 +510,6 @@ function BedProperties({
         />
       </div>
 
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-            <Grid2x2 className="size-3.5" />
-            Risoluzione griglia
-          </Label>
-          <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
-            passo: {cell} cm
-          </span>
-        </div>
-        <SegmentedGroup
-          options={CELL_SIZE_OPTIONS.map((v) => ({
-            value: String(v),
-            label: `${v} cm`,
-          }))}
-          value={String(cell)}
-          onChange={(v) => onCellSizeChange(bed.id, Number(v))}
-        />
-        <p className="text-[10px] text-muted-foreground leading-snug">
-          Passo della griglia. Cambiarlo riscala l&apos;aiuola e i patch in modo
-          proporzionale.
-        </p>
-      </div>
 
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
@@ -627,39 +518,36 @@ function BedProperties({
             Dimensioni
           </Label>
           <span className="text-[10px] font-mono text-muted-foreground tabular-nums">
-            {bed.cols}×{bed.rows} celle
+            {bed.widthCm}×{bed.heightCm} cm
           </span>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <MetricDimensionInput
             label="Larghezza"
-            cells={bed.cols}
-            cellSizeCm={cell}
-            onChangeCells={(c) => onResize(bed.id, c, bed.rows)}
+            sizeCm={bed.widthCm}
+            onChangeCm={(widthCm) => onResize(bed.id, widthCm, bed.heightCm)}
           />
           <MetricDimensionInput
             label="Altezza"
-            cells={bed.rows}
-            cellSizeCm={cell}
-            onChangeCells={(c) => onResize(bed.id, bed.cols, c)}
+            sizeCm={bed.heightCm}
+            onChangeCm={(heightCm) => onResize(bed.id, bed.widthCm, heightCm)}
           />
         </div>
         <p className="text-[10px] text-muted-foreground leading-snug">
-          Lato massimo {MAX_BED_SIDE_CM / 100} m: fino a{" "}
-          {maxGridDimForCellSizeCm(cell)} celle con passo {cell} cm.
+          Lato tra {MIN_BED_SIDE_CM / 100} m e {MAX_BED_SIDE_CM / 100} m, passo 0,5 cm.
         </p>
       </div>
 
       <div className="rounded-xl border border-border bg-card p-3 space-y-1.5">
         <FootprintRow
           label="Totale"
-          value={`${(widthCm / 100).toFixed(2)}×${(heightCm / 100).toFixed(2)} m`}
-          hint={`${widthCm}×${heightCm} cm`}
+          value={`${(bed.widthCm / 100).toFixed(2)}×${(bed.heightCm / 100).toFixed(2)} m`}
+          hint={`${bed.widthCm}×${bed.heightCm} cm`}
         />
         <FootprintRow
           label="Occupazione"
           value={`${pct}%`}
-          hint={`${occupied}/${total} celle`}
+          hint={`${Math.round(occupiedAreaCm2)} / ${totalAreaCm2} cm²`}
         />
         <div className="h-1.5 rounded-full bg-muted overflow-hidden mt-1">
           <div
@@ -685,28 +573,19 @@ function BedProperties({
 }
 
 /**
- * Input dimensione in metri: l'utente vede e digita metri (es. 1.20),
- * ma internamente snappiamo al numero intero di celle che meglio
- * approssima la dimensione richiesta. Mostra anche un hint con il
- * conteggio celle e il valore in cm.
+ * Input dimensione in metri con commit diretto in cm (quantizzato 0,5 cm).
  */
 function MetricDimensionInput({
   label,
-  cells,
-  cellSizeCm,
-  onChangeCells,
+  sizeCm,
+  onChangeCm,
 }: {
   label: string;
-  cells: number;
-  cellSizeCm: number;
-  onChangeCells: (cells: number) => void;
+  sizeCm: number;
+  onChangeCm: (cm: number) => void;
 }) {
-  const meters = (cells * cellSizeCm) / 100;
+  const meters = sizeCm / 100;
   const formatted = meters.toFixed(2);
-  // Keep the local draft in sync with the canonical value (cells x
-  // cellSize) without an effect. React docs: "You don't need an effect
-  // to adjust state based on prop changes" -- compare-and-set during
-  // render is the recommended pattern.
   const [draft, setDraft] = React.useState(formatted);
   const [lastSynced, setLastSynced] = React.useState(formatted);
   if (lastSynced !== formatted) {
@@ -714,8 +593,8 @@ function MetricDimensionInput({
     setDraft(formatted);
   }
 
-  const maxDim = maxGridDimForCellSizeCm(cellSizeCm);
-  const maxMeters = (maxDim * cellSizeCm) / 100;
+  const maxMeters = MAX_BED_SIDE_CM / 100;
+  const minMeters = MIN_BED_SIDE_CM / 100;
 
   const commit = () => {
     const trimmed = draft.replace(",", ".").trim();
@@ -728,16 +607,12 @@ function MetricDimensionInput({
       setDraft(meters.toFixed(2));
       return;
     }
-    const cm = Math.round(m * 100);
-    const nextCells = Math.max(
-      1,
-      Math.min(maxDim, Math.round(cm / cellSizeCm)),
-    );
-    if (nextCells !== cells) onChangeCells(nextCells);
-    else setDraft(meters.toFixed(2));
+    const cm = quantizeCm(Math.round(m * 100));
+    const clamped = Math.max(MIN_BED_SIDE_CM, Math.min(MAX_BED_SIDE_CM, cm));
+    if (clamped !== sizeCm) onChangeCm(clamped);
+    else setDraft((clamped / 100).toFixed(2));
   };
 
-  const stepM = cellSizeCm / 100;
   return (
     <div className="space-y-1">
       <Label className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
@@ -747,8 +622,8 @@ function MetricDimensionInput({
         <Input
           type="number"
           inputMode="decimal"
-          step={stepM}
-          min={stepM}
+          step={0.05}
+          min={minMeters}
           max={maxMeters}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -763,7 +638,7 @@ function MetricDimensionInput({
         </span>
       </div>
       <div className="text-[10px] font-mono text-muted-foreground tabular-nums text-right">
-        {cells} celle · {cells * cellSizeCm} cm
+        {sizeCm} cm
       </div>
     </div>
   );
@@ -824,40 +699,30 @@ function PatchComposition({
   bed: Bed;
   patch: PlantPatch;
   plant: Plant;
-  onResize: (cols: number, rows: number) => void;
+  onResize: (sizeCm: { width: number; height: number }) => void;
   onSpacingChange: (cm: number | undefined) => void;
   onArrangementChange: (arrangement: PatchArrangement | undefined) => void;
 }) {
   const spacing = patchSpacingCm(patch, plant);
   const arrangement = patchEffectiveArrangement(patch, plant);
   const density = patchDensitySummaryForUI(patch, bed, plant);
-  const { displayFootprint, occupied } = density;
+  const { displayFootprint } = density;
 
-  // Largest plantCols/plantRows that still fits inside the bed at the
-  // current anchor, given the active spacing mode and arrangement. We
-  // grow each axis independently and stop when the resulting footprint
-  // would extend past the grid. Overlap with other patches is handled by
-  // the store (toast on rejection); this only constrains "fits in bed".
-  const { maxCols, maxRows } = React.useMemo(() => {
-    const gridCap = maxGridDimForCellSizeCm(bedCellSizeCm(bed));
-    const grow = (axis: "cols" | "rows") => {
-      let n = 1;
-      while (n < gridCap) {
-        const candidate: PlantPatch = {
-          ...patch,
-          plantCols: axis === "cols" ? n + 1 : patch.plantCols,
-          plantRows: axis === "rows" ? n + 1 : patch.plantRows,
-        };
-        const rect = patchCellRect(candidate, bed, plant);
-        if (axis === "cols" ? rect.col1 >= bed.cols : rect.row1 >= bed.rows) {
-          break;
-        }
-        n++;
-      }
-      return Math.max(1, n);
-    };
-    return { maxCols: grow("cols"), maxRows: grow("rows") };
-  }, [bed, patch, plant]);
+  const [widthDraft, setWidthDraft] = React.useState(String(patch.sizeCm.width));
+  const [heightDraft, setHeightDraft] = React.useState(String(patch.sizeCm.height));
+  React.useEffect(() => setWidthDraft(String(patch.sizeCm.width)), [patch.sizeCm.width]);
+  React.useEffect(() => setHeightDraft(String(patch.sizeCm.height)), [patch.sizeCm.height]);
+
+  const commitSize = () => {
+    const w = quantizeCm(Number(widthDraft.replace(",", ".")));
+    const h = quantizeCm(Number(heightDraft.replace(",", ".")));
+    if (!Number.isFinite(w) || !Number.isFinite(h) || w <= 0 || h <= 0) {
+      setWidthDraft(String(patch.sizeCm.width));
+      setHeightDraft(String(patch.sizeCm.height));
+      return;
+    }
+    onResize({ width: w, height: h });
+  };
 
   const [spacingDraft, setSpacingDraft] = React.useState<string>(String(spacing));
   React.useEffect(() => setSpacingDraft(String(spacing)), [spacing]);
@@ -888,20 +753,34 @@ function PatchComposition({
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Stepper
-          label="Colonne"
-          value={patch.plantCols}
-          min={1}
-          max={maxCols}
-          onChange={(v) => onResize(v, patch.plantRows)}
-        />
-        <Stepper
-          label="Righe"
-          value={patch.plantRows}
-          min={1}
-          max={maxRows}
-          onChange={(v) => onResize(patch.plantCols, v)}
-        />
+        <div className="space-y-1">
+          <Label className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
+            Larghezza (cm)
+          </Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={1}
+            value={widthDraft}
+            onChange={(e) => setWidthDraft(e.target.value)}
+            onBlur={commitSize}
+            className="h-8 font-mono tabular-nums"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
+            Altezza (cm)
+          </Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={1}
+            value={heightDraft}
+            onChange={(e) => setHeightDraft(e.target.value)}
+            onBlur={commitSize}
+            className="h-8 font-mono tabular-nums"
+          />
+        </div>
       </div>
 
       <div className="space-y-1.5">
@@ -973,7 +852,7 @@ function PatchComposition({
         <FootprintRow
           label="Piante totali"
           value={density.showTotalLessThanOne ? "<1" : String(density.totalPlants)}
-          hint={`${patch.plantCols}×${patch.plantRows}`}
+          hint={`${Math.round(patch.sizeCm.width)}×${Math.round(patch.sizeCm.height)} cm`}
         />
         <FootprintRow
           label="Ingombro"
@@ -981,9 +860,9 @@ function PatchComposition({
           hint={`${(displayFootprint.widthCm / 100).toFixed(2)}×${(displayFootprint.heightCm / 100).toFixed(2)} m`}
         />
         <FootprintRow
-          label="Celle occupate"
-          value={`${occupied.cols}×${occupied.rows}`}
-          hint={`${occupied.cols * occupied.rows}/${bed.cols * bed.rows}`}
+          label="Posizione"
+          value={`${patch.positionCm.x}×${patch.positionCm.y} cm`}
+          hint="angolo sup-sin"
         />
       </div>
     </div>

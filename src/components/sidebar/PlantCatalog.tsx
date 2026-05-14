@@ -1,31 +1,11 @@
 "use client";
 
-import * as React from "react";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { PLANTS, plantActiveInMonth } from "@/lib/data/plants";
-import { PlantCard } from "@/components/sidebar/PlantCard";
 import { SeasonFilter } from "@/components/sidebar/SeasonFilter";
-import { useGardenStore } from "@/lib/store";
-import { Search, Sprout } from "lucide-react";
-
-const CATEGORIES = [
-  { id: "all", label: "Tutte" },
-  { id: "ortaggio", label: "Ortaggi" },
-  { id: "frutto", label: "Frutti" },
-  { id: "frutti-di-bosco", label: "Bosco" },
-  { id: "foglia", label: "Foglia" },
-  { id: "radice", label: "Radici" },
-  { id: "leguminosa", label: "Legumi" },
-  { id: "aromatica", label: "Aromat." },
-] as const;
-
-type Category = (typeof CATEGORIES)[number]["id"];
 
 export function PlantCatalog() {
   return (
-    <aside className="hidden md:flex w-[260px] xl:w-[300px] shrink-0 border-r border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60 flex flex-col">
+    <aside className="hidden md:flex w-[240px] xl:w-[260px] shrink-0 border-r border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60 flex flex-col">
       <PlantCatalogContent />
     </aside>
   );
@@ -36,117 +16,26 @@ export function PlantCatalogContent({
 }: {
   scrollMode?: "scroll-area" | "native";
 }) {
-  const seasonFilter = useGardenStore((s) => s.seasonFilter);
-  const [query, setQuery] = React.useState("");
-  const [category, setCategory] = React.useState<Category>("all");
-
-  const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const base = PLANTS.filter((p) => {
-      if (category !== "all" && p.category !== category) return false;
-      if (q && !p.name.toLowerCase().includes(q) && !p.scientific?.toLowerCase().includes(q))
-        return false;
-      return true;
-    });
-    return [...base].sort((a, b) => {
-      const ao = plantActiveInMonth(a, seasonFilter) ? 0 : 1;
-      const bo = plantActiveInMonth(b, seasonFilter) ? 0 : 1;
-      return ao - bo;
-    });
-  }, [query, category, seasonFilter]);
-
-  return (
-    <>
-      <div className="p-3 space-y-3 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
-              Catalogo
-            </div>
-            <h2 className="text-sm font-semibold tracking-tight">Piante</h2>
-          </div>
+  const body = (
+    <div className="p-3 space-y-3">
+      <div>
+        <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
+          Orto
         </div>
-
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
-          <Input
-            placeholder="Cerca pianta..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="h-8 pl-8 text-xs"
-          />
-        </div>
-
-        <SeasonFilter />
-
-        <LegendBar />
-
-        <div className="flex flex-wrap gap-1">
-          {CATEGORIES.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setCategory(c.id)}
-              className={
-                "px-2 py-1 rounded-full text-[10px] font-mono uppercase tracking-wide border transition-colors " +
-                (category === c.id
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-primary/40")
-              }
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
+        <h2 className="text-sm font-semibold tracking-tight">Stagione</h2>
       </div>
 
-      {scrollMode === "native" ? (
-        <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y">
-          <div className="p-3 space-y-2">
-            {filtered.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-6 text-center">
-                <Sprout className="size-5 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">
-                  Nessuna pianta corrisponde ai filtri.
-                </p>
-              </div>
-            ) : (
-              filtered.map((p, i) => (
-                <PlantCard
-                  key={p.id}
-                  plant={p}
-                  index={i}
-                  outOfSeason={!plantActiveInMonth(p, seasonFilter)}
-                />
-              ))
-            )}
-          </div>
-        </div>
-      ) : (
-        <ScrollArea className="flex-1">
-          <div className="p-3 space-y-2">
-            {filtered.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border p-6 text-center">
-                <Sprout className="size-5 text-muted-foreground mx-auto mb-2" />
-                <p className="text-xs text-muted-foreground">
-                  Nessuna pianta corrisponde ai filtri.
-                </p>
-              </div>
-            ) : (
-              filtered.map((p, i) => (
-                <PlantCard
-                  key={p.id}
-                  plant={p}
-                  index={i}
-                  outOfSeason={!plantActiveInMonth(p, seasonFilter)}
-                />
-              ))
-            )}
-          </div>
-        </ScrollArea>
-      )}
-    </>
+      <SeasonFilter />
+
+      <LegendBar />
+    </div>
   );
+
+  if (scrollMode === "native") {
+    return <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y">{body}</div>;
+  }
+
+  return <ScrollArea className="flex-1">{body}</ScrollArea>;
 }
 
 function LegendBar() {
@@ -163,7 +52,7 @@ function LegendBar() {
 
       <div className="mt-1.5 grid grid-cols-2 gap-x-2 gap-y-1 text-[10px] text-muted-foreground">
         <LegendItem label="Semina" className="bg-[var(--sage)]" />
-        <LegendItem label="Trapianto" className="bg-[var(--sky)]" />
+        <LegendItem label="Trapianto" className="bg-[var(--ochre)]" />
         <LegendItem label="Raccolto" className="bg-[var(--terracotta)]" />
         <LegendItem label="Fuori stagione" className="bg-muted-foreground/40" hint="opaco" />
         <LegendItem label="Vicini OK" className="bg-[var(--sage)]/70" hint="bordo" />

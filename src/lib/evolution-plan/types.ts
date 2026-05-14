@@ -37,15 +37,13 @@ export type EvolutionGardenSnapshot = {
     id: string;
     name: string;
     position: { x: number; y: number };
-    cols: number;
-    rows: number;
-    cellSizeCm?: number;
+    widthCm: number;
+    heightCm: number;
     patches: Array<{
       id: string;
       plantId: string;
-      anchor: { col: number; row: number };
-      plantCols: number;
-      plantRows: number;
+      positionCm: { x: number; y: number };
+      sizeCm: { width: number; height: number };
       spacingCm?: number;
     }>;
   }>;

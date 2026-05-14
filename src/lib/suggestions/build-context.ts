@@ -12,7 +12,6 @@ import type {
 } from "@/lib/types";
 import { plantById } from "@/lib/data/plants";
 import type { GardenSnapshot } from "@/lib/suggestions/types";
-import { bedCellSizeCm } from "@/lib/utils/spacing";
 
 const KIND_LABEL_IT: Record<GardenActivityKind, string> = {
   sowing: "semina",
@@ -139,11 +138,10 @@ export function buildContext(
     lines.push("(nessuna aiuola)");
   }
   for (const bed of snapshot.beds) {
-    const cell = bedCellSizeCm(bed);
-    const w = (bed.cols * cell) / 100;
-    const h = (bed.rows * cell) / 100;
+    const w = bed.widthCm / 100;
+    const h = bed.heightCm / 100;
     lines.push(
-      `### Aiuola "${bed.name}" [${bed.id}] — ${w.toFixed(2)}x${h.toFixed(2)} m, cella ${cell} cm`,
+      `### Aiuola "${bed.name}" [${bed.id}] — ${w.toFixed(2)}x${h.toFixed(2)} m`,
     );
     if (bed.patches.length === 0) {
       lines.push("  (nessun patch piantato)");
@@ -174,7 +172,7 @@ export function buildContext(
         : " | nessuna attivita' registrata su questo patch";
 
       lines.push(
-        `- patch [${patch.id}] (${patch.plantCols}x${patch.plantRows}) ${plantSummary(plant)}${ageStr}${cadenceStr}`,
+        `- patch [${patch.id}] (${Math.round(patch.sizeCm.width)}×${Math.round(patch.sizeCm.height)} cm) ${plantSummary(plant)}${ageStr}${cadenceStr}`,
       );
     }
   }
