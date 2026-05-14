@@ -27,18 +27,44 @@ export function RightPanel() {
   );
 }
 
-export function RightPanelContent() {
+export function RightPanelContent({
+  scrollMode = "scroll-area",
+}: {
+  scrollMode?: "scroll-area" | "native";
+}) {
   const selection = useGardenStore((s) => s.selection);
   const [tab, setTab] = React.useState("properties");
 
-  // Auto switch to properties when user selects something on the canvas
   React.useEffect(() => {
     if (selection) setTab("properties");
   }, [selection]);
 
+  const panels = (
+    <>
+      <TabsContent value="properties" className="m-0">
+        <PropertiesPanel />
+      </TabsContent>
+      <TabsContent value="companions" className="m-0">
+        <CompanionPanel />
+      </TabsContent>
+      <TabsContent value="stats" className="m-0">
+        <StatsDashboard />
+      </TabsContent>
+      <TabsContent value="diary" className="m-0">
+        <ActivityPanel />
+      </TabsContent>
+      <TabsContent value="suggestions" className="m-0">
+        <SuggestionsPanel />
+      </TabsContent>
+      <TabsContent value="rotation" className="m-0">
+        <EvolutionPanel />
+      </TabsContent>
+    </>
+  );
+
   return (
-    <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col">
-      <div className="px-3 pt-9 lg:pt-9">
+    <Tabs value={tab} onValueChange={setTab} className="flex min-h-0 flex-1 flex-col">
+      <div className="shrink-0 px-3 pt-9 lg:pt-9">
         <TabsList className="w-full">
           <TabsTrigger value="properties" className="text-xs">
             <SlidersHorizontalIcon className="size-4 lg:hidden" aria-hidden />
@@ -72,27 +98,17 @@ export function RightPanelContent() {
           </TabsTrigger>
         </TabsList>
       </div>
-      <div className="flex-1 min-h-0">
-        <ScrollArea className="h-full">
-          <TabsContent value="properties" className="m-0">
-            <PropertiesPanel />
-          </TabsContent>
-          <TabsContent value="companions" className="m-0">
-            <CompanionPanel />
-          </TabsContent>
-          <TabsContent value="stats" className="m-0">
-            <StatsDashboard />
-          </TabsContent>
-          <TabsContent value="diary" className="m-0">
-            <ActivityPanel />
-          </TabsContent>
-          <TabsContent value="suggestions" className="m-0">
-            <SuggestionsPanel />
-          </TabsContent>
-          <TabsContent value="rotation" className="m-0">
-            <EvolutionPanel />
-          </TabsContent>
-        </ScrollArea>
+      <div className="min-h-0 flex-1">
+        {scrollMode === "native" ? (
+          <div
+            className="h-full min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
+            onWheel={(e) => e.stopPropagation()}
+          >
+            {panels}
+          </div>
+        ) : (
+          <ScrollArea className="h-full">{panels}</ScrollArea>
+        )}
       </div>
     </Tabs>
   );

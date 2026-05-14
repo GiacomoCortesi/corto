@@ -35,7 +35,14 @@ export function PlantCatalogContent({
   );
 
   if (scrollMode === "native") {
-    return <div className="flex-1 min-h-0 overflow-y-auto touch-pan-y">{body}</div>;
+    return (
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
+        onWheel={(e) => e.stopPropagation()}
+      >
+        {body}
+      </div>
+    );
   }
 
   return <ScrollArea className="flex-1">{body}</ScrollArea>;

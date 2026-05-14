@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/input";
 import { PLANTS } from "@/lib/data/plants";
 import { PLANT_CATEGORIES, type PlantCategoryFilter } from "@/lib/data/plant-categories";
 import { PlantCard } from "@/components/sidebar/PlantCard";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Search, Sprout } from "lucide-react";
 
@@ -87,10 +86,9 @@ export function AddPlantDialog({ open, onOpenChange }: Props) {
           </div>
         </div>
 
-        <ScrollArea
-          className="min-h-0 flex-1 overflow-hidden"
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
           onWheel={(e) => e.stopPropagation()}
-          onTouchMove={(e) => e.stopPropagation()}
         >
           <div className="px-4 py-3">
           {filtered.length === 0 ? (
@@ -115,7 +113,7 @@ export function AddPlantDialog({ open, onOpenChange }: Props) {
             </div>
           )}
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

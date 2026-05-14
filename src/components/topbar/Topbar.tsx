@@ -186,8 +186,8 @@ export function Topbar({ canvasRef, onReset }: Props) {
             >
               <PanelLeft className="size-4" />
             </SheetTrigger>
-            <SheetContent side="left" className="p-0">
-              <div className="h-full min-h-0 flex flex-col border-r border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
+            <SheetContent side="left" className="flex flex-col overflow-hidden p-0">
+              <div className="flex min-h-0 flex-1 flex-col border-r border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
                 <PlantCatalogContent scrollMode="native" />
               </div>
             </SheetContent>
@@ -201,9 +201,9 @@ export function Topbar({ canvasRef, onReset }: Props) {
             >
               <PanelRight className="size-4" />
             </SheetTrigger>
-            <SheetContent side="right" className="p-0">
-              <div className="h-full flex flex-col border-l border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
-                <RightPanelContent />
+            <SheetContent side="right" className="flex flex-col overflow-hidden p-0">
+              <div className="flex min-h-0 flex-1 flex-col border-l border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60">
+                <RightPanelContent scrollMode="native" />
               </div>
             </SheetContent>
           </Sheet>
