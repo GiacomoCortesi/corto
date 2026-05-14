@@ -293,6 +293,8 @@ export type Suggestion = {
   rationale: string;
   /** Optional weather note that guided the decision */
   weatherNote?: string;
+  /** Optional lunar-calendar note that guided the suggested date */
+  moonNote?: string;
   confidence: SuggestionConfidence;
   /**
    * Evaluation for each patch relevant to this activity kind.

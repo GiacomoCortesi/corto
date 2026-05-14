@@ -8,9 +8,11 @@ import type {
   GardenActivity,
   GardenActivityKind,
   Plant,
-  PlantPatch,
+  PlantCategory,
 } from "@/lib/types";
 import { plantById } from "@/lib/data/plants";
+import { CATEGORY_CADENCES } from "@/lib/suggestions/cadences";
+import { summarizeLunarWindow } from "@/lib/suggestions/lunar-window";
 import type { GardenSnapshot } from "@/lib/suggestions/types";
 
 const KIND_LABEL_IT: Record<GardenActivityKind, string> = {
@@ -24,6 +26,12 @@ const KIND_LABEL_IT: Record<GardenActivityKind, string> = {
   other: "altro",
 };
 
+const RECURRING_KINDS: GardenActivityKind[] = [
+  "weeding",
+  "watering",
+  "treatment",
+];
+
 function isoDate(ts: number): string {
   const d = new Date(ts);
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -35,8 +43,6 @@ function daysAgo(ts: number, now: number): number {
 }
 
 function plantSummary(p: Plant): string {
-  // One compact line with what’s needed for reasoning:
-  // category, water, sun, sowing/harvest months, short fert/treatments.
   const sowing = p.sowing.length ? `sem ${p.sowing.join(",")}` : "";
   const transplanting = (p.transplanting ?? []).length
     ? `trap ${(p.transplanting ?? []).join(",")}`
@@ -52,27 +58,27 @@ function plantSummary(p: Plant): string {
   return `${p.name} [${p.id}] (${p.category}, sole=${p.sun}, acqua=${p.water}, ${season}${fert}${pests})`;
 }
 
-/**
- * For each patch, finds the "starting" event (oldest sowing or transplanting
- * for that patch). Used to estimate patch age.
- */
+function expectedCadenceDays(
+  category: PlantCategory,
+  kind: GardenActivityKind,
+): number | null {
+  const w = CATEGORY_CADENCES[category]?.[kind];
+  return w ? w.everyDays : null;
+}
+
 function patchStartTs(
-  patch: PlantPatch,
+  patchId: string,
   events: GardenActivity[],
 ): number | null {
   const matches = events.filter(
     (e) =>
-      e.patchId === patch.id &&
+      e.patchId === patchId &&
       (e.kind === "sowing" || e.kind === "transplanting"),
   );
   if (matches.length === 0) return null;
   return Math.min(...matches.map((m) => m.at));
 }
 
-/**
- * For each (patchId, kind), finds the timestamp of the most recent event.
- * This lets the model reason like "weeding on patch X: 8 days ago".
- */
 function lastEventByPatchAndKind(
   events: GardenActivity[],
 ): Map<string, number> {
@@ -86,6 +92,18 @@ function lastEventByPatchAndKind(
   return m;
 }
 
+function eventStatusLabel(
+  lastDays: number | null,
+  expectedDays: number | null,
+  hasEvent: boolean,
+): string {
+  if (!hasEvent) return "nessun evento registrato";
+  if (lastDays === null || expectedDays === null) return "evento presente";
+  if (lastDays >= expectedDays) return "probabilmente in ritardo";
+  if (lastDays >= expectedDays - 1) return "in scadenza";
+  return "ok per cadenza";
+}
+
 const RELEVANT_KINDS: GardenActivityKind[] = [
   "sowing",
   "transplanting",
@@ -96,9 +114,7 @@ const RELEVANT_KINDS: GardenActivityKind[] = [
 ];
 
 export type BuiltContext = {
-  /** Markdown-ish text to inject as the user message in the prompt */
   text: string;
-  /** Server-side lookup to enrich the response (e.g. plantId from patchId) */
   patchIndex: Map<string, { bedId: string; plantId: string }>;
 };
 
@@ -133,6 +149,12 @@ export function buildContext(
     );
   }
 
+  lines.push(
+    "",
+    "## Calendario lunare (prossimi 14 gg)",
+    summarizeLunarWindow(now, 14),
+  );
+
   lines.push("", "## Aiuole e patch piantati");
   if (snapshot.beds.length === 0) {
     lines.push("(nessuna aiuola)");
@@ -152,14 +174,14 @@ export function buildContext(
       if (!plant) continue;
       patchIndex.set(patch.id, { bedId: bed.id, plantId: patch.plantId });
 
-      const startTs = patchStartTs(patch, snapshot.events);
+      const startTs = patchStartTs(patch.id, snapshot.events);
       const ageStr =
         startTs !== null
           ? `, piantato ${daysAgo(startTs, now)}gg fa (${isoDate(startTs)})`
           : ", piantato: data sconosciuta";
 
       const cadenceLines: string[] = [];
-      for (const k of ["weeding", "watering", "treatment"] as const) {
+      for (const k of RECURRING_KINDS) {
         const last = lastByKind.get(`${patch.id}:${k}`);
         if (last) {
           cadenceLines.push(
@@ -169,11 +191,41 @@ export function buildContext(
       }
       const cadenceStr = cadenceLines.length
         ? ` | ultime: ${cadenceLines.join("; ")}`
-        : " | nessuna attivita' registrata su questo patch";
+        : " | nessuna attivita' ricorrente registrata su questo patch";
 
       lines.push(
         `- patch [${patch.id}] (${Math.round(patch.sizeCm.width)}×${Math.round(patch.sizeCm.height)} cm) ${plantSummary(plant)}${ageStr}${cadenceStr}`,
       );
+    }
+  }
+
+  if (patchIndex.size > 0) {
+    lines.push("", "## Sintesi eventi per patch (per il ragionamento)");
+    for (const [patchId, { plantId }] of patchIndex) {
+      const plant = plantById(plantId);
+      if (!plant) continue;
+
+      const parts: string[] = [];
+      for (const k of RECURRING_KINDS) {
+        const last = lastByKind.get(`${patchId}:${k}`);
+        const expected = expectedCadenceDays(plant.category, k);
+        const lastDays = last ? daysAgo(last, now) : null;
+        const status = eventStatusLabel(lastDays, expected, Boolean(last));
+        const cadenceStr = expected ? `cadenza ~${expected}gg` : "cadenza n/d";
+        const whenStr =
+          lastDays !== null
+            ? `${KIND_LABEL_IT[k]} ${lastDays}gg fa`
+            : `${KIND_LABEL_IT[k]} mai registrata`;
+        parts.push(`${whenStr} (${cadenceStr}) → ${status}`);
+      }
+
+      const startTs = patchStartTs(patchId, snapshot.events);
+      const growthStr =
+        startTs !== null
+          ? `impianto ${daysAgo(startTs, now)}gg fa`
+          : "data impianto sconosciuta";
+
+      lines.push(`- patch [${patchId}] (${plant.name}): ${growthStr}; ${parts.join("; ")}`);
     }
   }
 

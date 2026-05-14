@@ -2,6 +2,8 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import type { EvolutionPlan } from "@/lib/evolution-plan/types";
+import type { TipOfTheDay } from "@/lib/suggestions/tip-types";
 import type {
   Bed,
   GardenActivity,
@@ -40,7 +42,7 @@ type Snapshot = {
 };
 
 export const PERSIST_KEY = "corto-garden-v1";
-export const PERSIST_VERSION = 9;
+export const PERSIST_VERSION = 11;
 
 export function defaultSeasonMonth(): number {
   return new Date().getMonth() + 1;
@@ -61,6 +63,21 @@ type State = {
   /** Last suggestions response (persisted cache) */
   cachedSuggestions?: {
     items: Suggestion[];
+    weatherSummary?: string;
+    savedAt: number;
+  };
+  /** Daily tip cache (one per calendar day + garden layout) */
+  cachedTipOfTheDay?: {
+    dayKey: string;
+    gardenFingerprint: string;
+    tip: TipOfTheDay;
+    savedAt: number;
+  };
+  /** IDs of evolution/rotation plans the user explicitly dismissed */
+  dismissedEvolutionPlanIds: string[];
+  /** Last evolution plan response (persisted cache) */
+  cachedEvolutionPlans?: {
+    plans: EvolutionPlan[];
     weatherSummary?: string;
     savedAt: number;
   };
@@ -161,6 +178,19 @@ type Actions = {
   dismissSuggestion: (id: string) => void;
   /** Saves (persisting) the last suggestions response */
   setCachedSuggestions: (cache: State["cachedSuggestions"] | undefined) => void;
+  setCachedTipOfTheDay: (cache: State["cachedTipOfTheDay"] | undefined) => void;
+
+  /**
+   * Accepts a rotation plan: creates a planned diary entry at
+   * `transitionWindow.start` (trapianto for replace, nota otherwise).
+   */
+  acceptEvolutionPlan: (plan: EvolutionPlan, preferredPlantId?: string) => void;
+  /** Marks an evolution plan as dismissed (persisted) */
+  dismissEvolutionPlan: (id: string) => void;
+  /** Saves (persisting) the last evolution plan response */
+  setCachedEvolutionPlans: (
+    cache: State["cachedEvolutionPlans"] | undefined,
+  ) => void;
 
   undo: () => void;
   redo: () => void;
@@ -252,6 +282,8 @@ export const useGardenStore = create<GardenStore>()(
       events: [],
       dismissedSuggestionIds: [],
       cachedSuggestions: undefined,
+      dismissedEvolutionPlanIds: [],
+      cachedEvolutionPlans: undefined,
       selection: null,
       seasonFilter: defaultSeasonMonth(),
       initialized: false,
@@ -270,6 +302,8 @@ export const useGardenStore = create<GardenStore>()(
           events: [],
           dismissedSuggestionIds: [],
           cachedSuggestions: undefined,
+          dismissedEvolutionPlanIds: [],
+          cachedEvolutionPlans: undefined,
           selection: null,
           seasonFilter: defaultSeasonMonth(),
           initialized: true,
@@ -285,6 +319,8 @@ export const useGardenStore = create<GardenStore>()(
           events: [],
           dismissedSuggestionIds: [],
           cachedSuggestions: undefined,
+          dismissedEvolutionPlanIds: [],
+          cachedEvolutionPlans: undefined,
           selection: null,
           seasonFilter: defaultSeasonMonth(),
           initialized: false,
@@ -622,6 +658,70 @@ export const useGardenStore = create<GardenStore>()(
         set({ cachedSuggestions: cache });
       },
 
+      setCachedTipOfTheDay: (cache) => {
+        set({ cachedTipOfTheDay: cache });
+      },
+
+      acceptEvolutionPlan: (plan, preferredPlantId) => {
+        const at = Date.parse(`${plan.transitionWindow.start}T12:00:00`);
+        const when = Number.isFinite(at) ? (at as number) : Date.now();
+        const planned = when > Date.now();
+        const notes = plan.rationale.slice(0, 650);
+        const action = plan.recommendation.action;
+        const targetPlantId =
+          preferredPlantId ?? plan.recommendation.preferredPlantId;
+
+        if (action === "replace" && targetPlantId) {
+          const plant = plantById(targetPlantId);
+          const title = plant
+            ? `Rotazione → ${plant.emoji} ${plant.name}`
+            : "Rotazione colturale";
+          get().addActivity({
+            at: when,
+            kind: "transplanting",
+            notes: `${title} — ${notes}`,
+            bedId: plan.bedId,
+            patchId: plan.patchId,
+            plantId: targetPlantId,
+            planned,
+          });
+        } else {
+          const actionLabel: Record<EvolutionPlan["recommendation"]["action"], string> = {
+            replace: "Sostituisci",
+            keep: "Mantieni",
+            rest: "Riposo suolo",
+            green_manure: "Sovescio",
+          };
+          get().addActivity({
+            at: when,
+            kind: "note",
+            notes: `${actionLabel[action]} — ${notes}`,
+            bedId: plan.bedId,
+            patchId: plan.patchId,
+            plantId: plan.currentPlantId,
+            planned,
+          });
+        }
+        get().dismissEvolutionPlan(plan.id);
+      },
+
+      dismissEvolutionPlan: (id) => {
+        set((state) =>
+          state.dismissedEvolutionPlanIds.includes(id)
+            ? state
+            : {
+                dismissedEvolutionPlanIds: [
+                  ...state.dismissedEvolutionPlanIds,
+                  id,
+                ].slice(-200),
+              },
+        );
+      },
+
+      setCachedEvolutionPlans: (cache) => {
+        set({ cachedEvolutionPlans: cache });
+      },
+
       undo: () => {
         const state = get();
         if (state.past.length === 0) return;
@@ -665,6 +765,9 @@ export const useGardenStore = create<GardenStore>()(
         events: state.events,
         dismissedSuggestionIds: state.dismissedSuggestionIds,
         cachedSuggestions: state.cachedSuggestions,
+        cachedTipOfTheDay: state.cachedTipOfTheDay,
+        dismissedEvolutionPlanIds: state.dismissedEvolutionPlanIds,
+        cachedEvolutionPlans: state.cachedEvolutionPlans,
         seasonFilter: state.seasonFilter,
         initialized: state.initialized,
       }),
@@ -871,6 +974,29 @@ export function migratePersistedState(persisted: unknown, fromVersion: number) {
       (b) => stripGridStepFromBed(b),
     );
     state = { ...state, beds } as typeof state;
+  }
+  if (fromVersion < 10) {
+    const s = state as Partial<State>;
+    state = {
+      ...state,
+      dismissedEvolutionPlanIds: Array.isArray(s.dismissedEvolutionPlanIds)
+        ? s.dismissedEvolutionPlanIds
+        : [],
+      cachedEvolutionPlans:
+        s.cachedEvolutionPlans && typeof s.cachedEvolutionPlans === "object"
+          ? s.cachedEvolutionPlans
+          : undefined,
+    } as typeof state;
+  }
+  if (fromVersion < 11) {
+    const s = state as Partial<State>;
+    state = {
+      ...state,
+      cachedTipOfTheDay:
+        s.cachedTipOfTheDay && typeof s.cachedTipOfTheDay === "object"
+          ? s.cachedTipOfTheDay
+          : undefined,
+    } as typeof state;
   }
   const normalized = state as Partial<State>;
   if (Array.isArray(normalized.beds)) {

@@ -1,9 +1,10 @@
 import { useId, type SVGProps } from "react";
 
-type Props = SVGProps<SVGSVGElement> & {
+type Props = Omit<SVGProps<SVGSVGElement>, "title"> & {
   /** Sun–moon angle in radians (0 = new, π = full, 2π = new). */
   angleRadians: number;
   size?: number;
+  title?: string;
 };
 
 /**
@@ -13,6 +14,7 @@ export function MoonPhaseIcon({
   angleRadians,
   size = 12,
   className,
+  title,
   ...props
 }: Props) {
   const uid = useId().replace(/:/g, "");
@@ -50,6 +52,7 @@ export function MoonPhaseIcon({
       className={className}
       {...props}
     >
+      {title ? <title>{title}</title> : null}
       <defs>
         <clipPath id={clipId}>
           <circle cx={cx} cy={cy} r={r} />

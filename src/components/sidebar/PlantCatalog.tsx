@@ -2,6 +2,7 @@
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { SeasonFilter } from "@/components/sidebar/SeasonFilter";
+import { TipOfTheDayCard } from "@/components/sidebar/TipOfTheDay";
 
 export function PlantCatalog() {
   return (
@@ -26,6 +27,8 @@ export function PlantCatalogContent({
       </div>
 
       <SeasonFilter />
+
+      <TipOfTheDayCard />
 
       <LegendBar />
     </div>

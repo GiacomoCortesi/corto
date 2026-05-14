@@ -46,6 +46,7 @@ type RawSuggestion = {
   patchId?: unknown;
   plantId?: unknown;
   weatherNote?: unknown;
+  moonNote?: unknown;
   confidence?: unknown;
   items?: unknown;
 };
@@ -137,6 +138,7 @@ export function validateSuggestions(
     seenKind.add(r.kind);
 
     const weatherNote = isString(r.weatherNote) ? r.weatherNote : undefined;
+    const moonNote = isString(r.moonNote) ? r.moonNote : undefined;
     const windowDays =
       typeof r.windowDays === "number" && r.windowDays >= 1 && r.windowDays <= 14
         ? Math.round(r.windowDays)
@@ -163,6 +165,7 @@ export function validateSuggestions(
       suggestedFor: ts,
       windowDays,
       weatherNote: weatherNote?.slice(0, 240),
+      moonNote: moonNote?.slice(0, 240),
       confidence: r.confidence as SuggestionConfidence,
       items,
     };

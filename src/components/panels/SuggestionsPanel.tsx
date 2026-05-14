@@ -15,6 +15,7 @@ import {
   CloudSun,
   Loader2,
   MapPin,
+  Moon,
   RefreshCcw,
   Sparkles,
   Sprout,
@@ -450,6 +451,13 @@ function SuggestionCard({
         <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded px-1.5 py-1">
           <CloudSun className="size-3 mt-0.5 shrink-0" />
           <span>{s.weatherNote}</span>
+        </div>
+      ) : null}
+
+      {s.moonNote ? (
+        <div className="flex items-start gap-1.5 text-[10px] text-muted-foreground bg-muted/30 rounded px-1.5 py-1">
+          <Moon className="size-3 mt-0.5 shrink-0" />
+          <span>{s.moonNote}</span>
         </div>
       ) : null}
 

@@ -17,7 +17,7 @@ import {
   BrainCircuit,
 } from "lucide-react";
 import { DemoGrid } from "@/components/landing/DemoGrid";
-import { FloatingProduceHero } from "@/components/landing/FloatingProduceHero";
+import { FloatingProduceHero, ProduceHeroBackdrop } from "@/components/landing/FloatingProduceHero";
 import { SatispayDonateDialog } from "@/components/support/SatispayDonateDialog";
 import { cn } from "@/lib/utils";
 
@@ -190,8 +190,9 @@ export function LandingScrollDemo() {
       </header>
 
       <main>
-        <section className="mx-auto max-w-6xl px-6 pt-12 pb-6">
-          <div className="grid lg:grid-cols-12 gap-10 items-start">
+        <section className="mx-auto max-w-6xl px-6 pt-12 pb-10 relative overflow-hidden min-h-[320px] sm:min-h-[360px]">
+          <ProduceHeroBackdrop className="absolute inset-0" />
+          <div className="grid lg:grid-cols-12 gap-10 items-start relative z-10">
             <div className="lg:col-span-6">
               <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
                 Pianifica l’orto. <span className="text-primary">Senza fogli, senza caos.</span>
@@ -207,8 +208,8 @@ export function LandingScrollDemo() {
               </div>
             </div>
 
-            <div className="hidden lg:block lg:col-span-6">
-              <FloatingProduceHero className="h-[320px] xl:h-[360px] w-[calc(100%+3rem)] -ml-6" />
+            <div className="lg:col-span-6">
+              <FloatingProduceHero className="h-[280px] sm:h-[320px] xl:h-[360px] w-full" />
             </div>
           </div>
         </section>

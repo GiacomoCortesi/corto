@@ -8,11 +8,13 @@ import { CompanionPanel } from "@/components/panels/CompanionPanel";
 import { StatsDashboard } from "@/components/panels/StatsDashboard";
 import { ActivityPanel } from "@/components/panels/ActivityPanel";
 import { SuggestionsPanel } from "@/components/panels/SuggestionsPanel";
+import { EvolutionPanel } from "@/components/panels/EvolutionPanel";
 import { useGardenStore } from "@/lib/store";
 import {
   BarChart3Icon,
   LightbulbIcon,
   NotebookPenIcon,
+  ShuffleIcon,
   SlidersHorizontalIcon,
   UsersIcon,
 } from "lucide-react";
@@ -63,6 +65,11 @@ export function RightPanelContent() {
             <span className="hidden lg:inline">Suggerimenti</span>
             <span className="sr-only lg:hidden">Suggerimenti</span>
           </TabsTrigger>
+          <TabsTrigger value="rotation" className="text-xs">
+            <ShuffleIcon className="size-4 lg:hidden" aria-hidden />
+            <span className="hidden lg:inline">Rotazione</span>
+            <span className="sr-only lg:hidden">Rotazione</span>
+          </TabsTrigger>
         </TabsList>
       </div>
       <div className="flex-1 min-h-0">
@@ -81,6 +88,9 @@ export function RightPanelContent() {
           </TabsContent>
           <TabsContent value="suggestions" className="m-0">
             <SuggestionsPanel />
+          </TabsContent>
+          <TabsContent value="rotation" className="m-0">
+            <EvolutionPanel />
           </TabsContent>
         </ScrollArea>
       </div>

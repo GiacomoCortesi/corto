@@ -47,6 +47,18 @@ function animClass(a: ProduceItem["anim"]) {
   return "produce-float-c";
 }
 
+export function ProduceHeroBackdrop({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn("pointer-events-none select-none", className)}
+      aria-hidden="true"
+    >
+      <div className="absolute inset-0 produce-hero-blob" />
+      <div className="absolute inset-0 produce-hero-mask" />
+    </div>
+  );
+}
+
 export function FloatingProduceHero({ className }: { className?: string }) {
   return (
     <div
