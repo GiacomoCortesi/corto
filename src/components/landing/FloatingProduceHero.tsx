@@ -55,6 +55,7 @@ export function ProduceHeroBackdrop({ className }: { className?: string }) {
     >
       <div className="absolute inset-0 produce-hero-blob" />
       <div className="absolute inset-0 produce-hero-mask" />
+      <div className="absolute inset-x-0 bottom-0 h-40 sm:h-52 lg:h-64 produce-hero-fade-bottom" />
     </div>
   );
 }

@@ -68,9 +68,9 @@ export function PlantCard({
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
+      ref={draggable ? setNodeRef : undefined}
+      {...(draggable ? listeners : {})}
+      {...(draggable ? attributes : {})}
       style={{ animationDelay: `${index * 18}ms` }}
       onClick={(e) => {
         if (isDragging) return;

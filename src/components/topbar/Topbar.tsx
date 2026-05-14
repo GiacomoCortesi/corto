@@ -167,10 +167,13 @@ export function Topbar({ canvasRef, onReset }: Props) {
           size="icon"
           aria-label="Aggiungi frutta e verdura all'aiuola"
           title="Aggiungi all'aiuola"
-          className="relative"
+          className="relative md:h-9 md:w-auto md:px-3 md:gap-2"
           onClick={() => setAddPlantOpen(true)}
         >
           <FruitPlusIcon />
+          <span className="hidden md:inline text-[10px] font-mono uppercase tracking-[0.18em]">
+            Aggiungi
+          </span>
         </Button>
         <AddPlantDialog open={addPlantOpen} onOpenChange={setAddPlantOpen} />
 

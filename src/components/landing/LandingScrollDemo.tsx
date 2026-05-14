@@ -99,6 +99,8 @@ const STEPS: Step[] = [
   },
 ];
 
+const HEADER_OFFSET_PX = 56;
+
 export function LandingScrollDemo() {
   const [activeStep, setActiveStep] = React.useState(0);
   const [stepT, setStepT] = React.useState(0);
@@ -110,7 +112,7 @@ export function LandingScrollDemo() {
     if (!target) return;
     const lenis = window.__lenis;
     if (lenis) {
-      lenis.scrollTo(target as HTMLElement, { offset: -88, duration: 1.05 });
+      lenis.scrollTo(target as HTMLElement, { offset: -HEADER_OFFSET_PX, duration: 1.05 });
       return;
     }
     target.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -120,32 +122,36 @@ export function LandingScrollDemo() {
     (idx: number) => {
       const el = pinRef.current;
       if (!el) return;
-      const top = el.getBoundingClientRect().top + window.scrollY;
+      const scrollY = window.__lenis?.scroll ?? window.scrollY;
+      const top = el.getBoundingClientRect().top + scrollY;
       const vh = Math.max(1, window.innerHeight);
       const y = top + idx * vh;
       const lenis = window.__lenis;
       if (lenis) {
-        lenis.scrollTo(y, { offset: -88, duration: 1.05 });
+        lenis.scrollTo(y, { offset: -HEADER_OFFSET_PX, duration: 1.05 });
         return;
       }
-      window.scrollTo({ top: y - 88, behavior: "smooth" });
+      window.scrollTo({ top: y - HEADER_OFFSET_PX, behavior: "smooth" });
     },
     []
   );
 
   React.useEffect(() => {
-    const tick = () => {
+    const update = () => {
       const el = pinRef.current;
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        const vh = Math.max(1, window.innerHeight);
-        const total = vh * (STEPS.length - 1);
-        const progressed = Math.min(Math.max(-rect.top, 0), total);
-        const next = Math.min(STEPS.length - 1, Math.max(0, Math.floor(progressed / vh)));
-        const t = Math.min(1, Math.max(0, (progressed - next * vh) / vh));
-        setActiveStep((prev) => (prev === next ? prev : next));
-        setStepT(t);
-      }
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const vh = Math.max(1, window.innerHeight);
+      const total = vh * (STEPS.length - 1);
+      const progressed = Math.min(Math.max(-rect.top, 0), total);
+      const next = Math.min(STEPS.length - 1, Math.max(0, Math.floor(progressed / vh)));
+      const t = Math.min(1, Math.max(0, (progressed - next * vh) / vh));
+      setActiveStep((prev) => (prev === next ? prev : next));
+      setStepT(t);
+    };
+
+    const tick = () => {
+      update();
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
@@ -190,11 +196,12 @@ export function LandingScrollDemo() {
       </header>
 
       <main>
-        <section className="mx-auto max-w-6xl px-6 pt-12 pb-10 relative overflow-hidden min-h-[320px] sm:min-h-[360px]">
+        <div className="relative min-h-dvh">
           <ProduceHeroBackdrop className="absolute inset-0" />
-          <div className="grid lg:grid-cols-12 gap-10 items-start relative z-10">
+          <section className="relative z-10 mx-auto flex min-h-dvh max-w-6xl items-center px-6 py-14">
+            <div className="grid w-full lg:grid-cols-12 lg:items-center lg:gap-10">
             <div className="lg:col-span-6">
-              <h1 className="mt-4 text-4xl sm:text-5xl font-semibold tracking-tight">
+              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
                 Pianifica l’orto. <span className="text-primary">Senza fogli, senza caos.</span>
               </h1>
               <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-xl">
@@ -202,17 +209,25 @@ export function LandingScrollDemo() {
                 suggerimenti. Tutto in un canvas semplice e veloce.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
-                <Link href="/app" className={buttonVariants({ size: "lg" })}>
-                  Inizia ora <ArrowRight className="ml-1.5 size-4" />
+                <Link
+                  href="/app"
+                  className={buttonVariants({
+                    size: "lg",
+                    className:
+                      "h-12 rounded-xl px-8 text-base sm:h-14 sm:px-10 sm:text-lg [&_svg]:size-5",
+                  })}
+                >
+                  INIZIA ORA <ArrowRight className="ml-2 size-5" />
                 </Link>
               </div>
             </div>
 
-            <div className="lg:col-span-6">
-              <FloatingProduceHero className="h-[280px] sm:h-[320px] xl:h-[360px] w-full" />
+            <div className="mt-10 lg:col-span-6 lg:mt-0">
+              <FloatingProduceHero className="mx-auto h-[min(42vh,380px)] w-full max-w-md lg:max-w-none" />
             </div>
           </div>
         </section>
+        </div>
 
         {/* Pin + reveal (Apple-style timeline) */}
         <section
@@ -220,7 +235,7 @@ export function LandingScrollDemo() {
           ref={(el) => {
             pinRef.current = el;
           }}
-          className="mx-auto max-w-6xl px-6"
+          className="relative mx-auto min-h-dvh max-w-6xl px-6"
         >
           {/* Mobile: each step becomes a pair (text + demo) */}
           <div className="lg:hidden py-10 space-y-10">
@@ -259,8 +274,8 @@ export function LandingScrollDemo() {
           <div className="hidden lg:block">
             {/* long scroll duration that drives the timeline */}
             <div className="h-[520vh]">
-              <div className="sticky top-[64px]">
-                <div className="min-h-[calc(100vh-64px)] flex items-center">
+              <div className="sticky top-14">
+                <div className="flex min-h-[calc(100dvh-3.5rem)] items-center">
                   <div className="grid lg:grid-cols-12 gap-10 items-start w-full">
                     <div className="lg:col-span-4 lg:order-1 order-2">
                     <div className="relative max-w-[420px]">
@@ -351,8 +366,16 @@ export function LandingScrollDemo() {
                 vista completa del tuo orto.
               </p>
               <div className="mt-6 flex justify-center">
-                <Link href="/app" className={buttonVariants({ size: "lg", variant: "default" })}>
-                  Inizia ora <ArrowRight className="ml-1.5 size-4" />
+                <Link
+                  href="/app"
+                  className={buttonVariants({
+                    size: "lg",
+                    variant: "default",
+                    className:
+                      "h-12 rounded-xl px-8 text-base sm:h-14 sm:px-10 sm:text-lg [&_svg]:size-5",
+                  })}
+                >
+                  INIZIA ORA <ArrowRight className="ml-2 size-5" />
                 </Link>
               </div>
             </div>

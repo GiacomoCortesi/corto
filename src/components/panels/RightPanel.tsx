@@ -21,7 +21,7 @@ import {
 
 export function RightPanel() {
   return (
-    <aside className="hidden md:flex w-[300px] xl:w-[340px] shrink-0 border-l border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60 flex-col">
+    <aside className="hidden md:flex w-[360px] xl:w-[400px] shrink-0 border-l border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60 flex-col">
       <RightPanelContent />
     </aside>
   );

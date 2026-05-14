@@ -6,7 +6,7 @@ import { TipOfTheDayCard } from "@/components/sidebar/TipOfTheDay";
 
 export function PlantCatalog() {
   return (
-    <aside className="hidden md:flex w-[240px] xl:w-[260px] shrink-0 border-r border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60 flex flex-col">
+    <aside className="hidden md:flex w-[360px] xl:w-[400px] shrink-0 border-r border-border bg-sidebar/80 backdrop-blur supports-[backdrop-filter]:bg-sidebar/60 flex flex-col">
       <PlantCatalogContent />
     </aside>
   );
