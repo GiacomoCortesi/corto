@@ -48,7 +48,6 @@ export function PlantCatalogContent({
         return false;
       return true;
     });
-    if (seasonFilter === null) return base;
     return [...base].sort((a, b) => {
       const ao = plantActiveInMonth(a, seasonFilter) ? 0 : 1;
       const bo = plantActiveInMonth(b, seasonFilter) ? 0 : 1;
@@ -117,7 +116,7 @@ export function PlantCatalogContent({
                   key={p.id}
                   plant={p}
                   index={i}
-                  outOfSeason={seasonFilter !== null && !plantActiveInMonth(p, seasonFilter)}
+                  outOfSeason={!plantActiveInMonth(p, seasonFilter)}
                 />
               ))
             )}
@@ -139,7 +138,7 @@ export function PlantCatalogContent({
                   key={p.id}
                   plant={p}
                   index={i}
-                  outOfSeason={seasonFilter !== null && !plantActiveInMonth(p, seasonFilter)}
+                  outOfSeason={!plantActiveInMonth(p, seasonFilter)}
                 />
               ))
             )}

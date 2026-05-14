@@ -1,13 +1,13 @@
 import { useGardenStore } from "@/lib/store";
 import type { GardenMeta, Bed, GardenActivity } from "@/lib/types";
-import { PERSIST_VERSION, migratePersistedState } from "@/lib/store";
+import { PERSIST_VERSION, migratePersistedState, normalizeSeasonFilter } from "@/lib/store";
 
 type ExportableState = {
   meta: GardenMeta;
   beds: Bed[];
   events: GardenActivity[];
   dismissedSuggestionIds: string[];
-  seasonFilter: number | null;
+  seasonFilter: number;
   initialized: boolean;
 };
 
@@ -83,10 +83,7 @@ export function importProjectJsonText(text: string) {
     dismissedSuggestionIds: Array.isArray(migrated.dismissedSuggestionIds)
       ? migrated.dismissedSuggestionIds
       : [],
-    seasonFilter:
-      typeof migrated.seasonFilter === "number" || migrated.seasonFilter === null
-        ? migrated.seasonFilter
-        : null,
+    seasonFilter: normalizeSeasonFilter(migrated.seasonFilter),
     initialized: Boolean(migrated.initialized),
     selection: null,
     past: [],

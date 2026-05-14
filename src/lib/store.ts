@@ -37,7 +37,16 @@ type Snapshot = {
 };
 
 export const PERSIST_KEY = "corto-garden-v1";
-export const PERSIST_VERSION = 5;
+export const PERSIST_VERSION = 6;
+
+export function defaultSeasonMonth(): number {
+  return new Date().getMonth() + 1;
+}
+
+export function normalizeSeasonFilter(month: unknown): number {
+  if (typeof month === "number" && month >= 1 && month <= 12) return month;
+  return defaultSeasonMonth();
+}
 
 type State = {
   meta: GardenMeta;
@@ -53,7 +62,7 @@ type State = {
     savedAt: number;
   };
   selection: Selection;
-  seasonFilter: number | null;
+  seasonFilter: number;
   initialized: boolean;
   past: Snapshot[];
   future: Snapshot[];
@@ -141,7 +150,7 @@ type Actions = {
   removePlantInstance: (bedId: string, instanceId: string) => void;
 
   setSelection: (selection: Selection) => void;
-  setSeasonFilter: (month: number | null) => void;
+  setSeasonFilter: (month: number) => void;
 
   addActivity: (input: AddActivityInput) => void;
   removeActivity: (id: string) => void;
@@ -252,7 +261,7 @@ export const useGardenStore = create<GardenStore>()(
       dismissedSuggestionIds: [],
       cachedSuggestions: undefined,
       selection: null,
-      seasonFilter: null,
+      seasonFilter: defaultSeasonMonth(),
       initialized: false,
       past: [],
       future: [],
@@ -270,7 +279,7 @@ export const useGardenStore = create<GardenStore>()(
           dismissedSuggestionIds: [],
           cachedSuggestions: undefined,
           selection: null,
-          seasonFilter: null,
+          seasonFilter: defaultSeasonMonth(),
           initialized: true,
           past: [],
           future: [],
@@ -285,7 +294,7 @@ export const useGardenStore = create<GardenStore>()(
           dismissedSuggestionIds: [],
           cachedSuggestions: undefined,
           selection: null,
-          seasonFilter: null,
+          seasonFilter: defaultSeasonMonth(),
           initialized: false,
           past: [],
           future: [],
@@ -584,7 +593,8 @@ export const useGardenStore = create<GardenStore>()(
 
       setSelection: (selection) => set({ selection }),
 
-      setSeasonFilter: (month) => set({ seasonFilter: month }),
+      setSeasonFilter: (month) =>
+        set({ seasonFilter: normalizeSeasonFilter(month) }),
 
       addActivity: (input) => {
         const id = uid("act");
@@ -803,6 +813,17 @@ export function migratePersistedState(persisted: unknown, fromVersion: number) {
           ? s.cachedSuggestions
           : undefined,
     } as typeof state;
+  }
+  if (fromVersion < 6) {
+    const s = state as Partial<State>;
+    state = {
+      ...state,
+      seasonFilter: normalizeSeasonFilter(s.seasonFilter),
+    } as typeof state;
+  }
+  const normalized = state as Partial<State>;
+  if (typeof normalized.seasonFilter !== "number") {
+    state = { ...state, seasonFilter: defaultSeasonMonth() } as typeof state;
   }
   return state as Partial<State>;
 }

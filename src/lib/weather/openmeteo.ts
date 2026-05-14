@@ -8,6 +8,7 @@
  */
 
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
+const ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive";
 
 const DAILY_FIELDS = [
   "temperature_2m_max",
@@ -18,6 +19,16 @@ const DAILY_FIELDS = [
   "weather_code",
 ] as const;
 
+const ARCHIVE_DAILY_FIELDS = [
+  "temperature_2m_max",
+  "temperature_2m_min",
+  "precipitation_sum",
+  "et0_fao_evapotranspiration",
+  "weather_code",
+] as const;
+
+export type WeatherDaySource = "forecast" | "archive" | "climatology";
+
 export type ForecastDay = {
   date: string; // YYYY-MM-DD
   tMax: number | null;
@@ -27,6 +38,7 @@ export type ForecastDay = {
   /** FAO-56 reference evapotranspiration (mm/day) */
   et0: number | null;
   weatherCode: number | null;
+  source?: WeatherDaySource;
 };
 
 export type Forecast = {
@@ -53,6 +65,87 @@ function pickAt<T>(arr: T[] | undefined, i: number): T | null {
   if (!arr || i < 0 || i >= arr.length) return null;
   const v = arr[i];
   return v === undefined ? null : v;
+}
+
+function parseDailyRows(
+  data: RawForecastResponse,
+  includePrecipProb: boolean,
+): ForecastDay[] {
+  const times = data.daily?.time ?? [];
+  return times.map((date, i) => ({
+    date,
+    tMax: pickAt(data.daily?.temperature_2m_max, i),
+    tMin: pickAt(data.daily?.temperature_2m_min, i),
+    precipMm: pickAt(data.daily?.precipitation_sum, i),
+    precipProb: includePrecipProb
+      ? pickAt(data.daily?.precipitation_probability_max, i)
+      : null,
+    et0: pickAt(data.daily?.et0_fao_evapotranspiration, i),
+    weatherCode: pickAt(data.daily?.weather_code, i),
+  }));
+}
+
+async function fetchDailyRange(
+  baseUrl: string,
+  lat: number,
+  lon: number,
+  startDate: string,
+  endDate: string,
+  timezone: string,
+  dailyFields: readonly string[],
+  includePrecipProb: boolean,
+): Promise<Forecast | null> {
+  const url = new URL(baseUrl);
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lon));
+  url.searchParams.set("start_date", startDate);
+  url.searchParams.set("end_date", endDate);
+  url.searchParams.set("daily", dailyFields.join(","));
+  url.searchParams.set("timezone", timezone);
+
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), { cache: "no-store" });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+
+  let data: RawForecastResponse;
+  try {
+    data = (await res.json()) as RawForecastResponse;
+  } catch {
+    return null;
+  }
+
+  return {
+    lat,
+    lon,
+    timezone: data.timezone ?? timezone,
+    days: parseDailyRows(data, includePrecipProb),
+  };
+}
+
+/**
+ * Historical daily weather for an inclusive date range (YYYY-MM-DD).
+ */
+export async function fetchArchiveRange(
+  lat: number,
+  lon: number,
+  startDate: string,
+  endDate: string,
+  timezone = "auto",
+): Promise<Forecast | null> {
+  return fetchDailyRange(
+    ARCHIVE_URL,
+    lat,
+    lon,
+    startDate,
+    endDate,
+    timezone,
+    ARCHIVE_DAILY_FIELDS,
+    false,
+  );
 }
 
 /**
@@ -88,22 +181,11 @@ export async function fetchForecast(
     return null;
   }
 
-  const times = data.daily?.time ?? [];
-  const days: ForecastDay[] = times.map((date, i) => ({
-    date,
-    tMax: pickAt(data.daily?.temperature_2m_max, i),
-    tMin: pickAt(data.daily?.temperature_2m_min, i),
-    precipMm: pickAt(data.daily?.precipitation_sum, i),
-    precipProb: pickAt(data.daily?.precipitation_probability_max, i),
-    et0: pickAt(data.daily?.et0_fao_evapotranspiration, i),
-    weatherCode: pickAt(data.daily?.weather_code, i),
-  }));
-
   return {
     lat,
     lon,
     timezone: data.timezone ?? timezone,
-    days,
+    days: parseDailyRows(data, true),
   };
 }
 
@@ -143,22 +225,11 @@ export async function fetchForecastWithPastDays(
     return null;
   }
 
-  const times = data.daily?.time ?? [];
-  const days: ForecastDay[] = times.map((date, i) => ({
-    date,
-    tMax: pickAt(data.daily?.temperature_2m_max, i),
-    tMin: pickAt(data.daily?.temperature_2m_min, i),
-    precipMm: pickAt(data.daily?.precipitation_sum, i),
-    precipProb: pickAt(data.daily?.precipitation_probability_max, i),
-    et0: pickAt(data.daily?.et0_fao_evapotranspiration, i),
-    weatherCode: pickAt(data.daily?.weather_code, i),
-  }));
-
   return {
     lat,
     lon,
     timezone: data.timezone ?? timezone,
-    days,
+    days: parseDailyRows(data, true),
   };
 }
 

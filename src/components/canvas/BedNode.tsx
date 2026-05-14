@@ -210,11 +210,8 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
         {bed.patches.map((patch) => {
           const plant = plantById(patch.plantId);
           const outOfSeason =
-            seasonFilter !== null &&
-            plant != null &&
-            !plantActiveInMonth(plant, seasonFilter);
-          const effectiveMonth =
-            seasonFilter ?? new Date().getMonth() + 1;
+            plant != null && !plantActiveInMonth(plant, seasonFilter);
+          const effectiveMonth = seasonFilter;
           const seasonMode =
             plant != null
               ? plantSeasonModeForMonth(plant, effectiveMonth)

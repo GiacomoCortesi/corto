@@ -4,26 +4,49 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useGardenStore } from "@/lib/store";
-import { MONTHS, MONTHS_LONG } from "@/lib/data/plants";
-import { CalendarOff, Calendar } from "lucide-react";
+import { MONTHS } from "@/lib/data/plants";
+import { resolveSeasonYear } from "@/lib/calendar/resolve-year";
+import { localDayKey } from "@/lib/calendar/day-key";
+import { getMoonPhaseForDate } from "@/lib/lunar/phase";
+import { wmoDayVisual } from "@/lib/weather/wmo-labels";
+import { useMonthWeather } from "@/hooks/useMonthWeather";
+import { SeasonCalendarGrid } from "@/components/sidebar/SeasonCalendarGrid";
+import { MoonPhaseIcon } from "@/components/icons/MoonPhaseIcon";
+import { Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function SeasonFilter() {
   const seasonFilter = useGardenStore((s) => s.seasonFilter);
   const setSeasonFilter = useGardenStore((s) => s.setSeasonFilter);
+  const location = useGardenStore((s) => s.meta?.location);
+  const [detailOpen, setDetailOpen] = React.useState(false);
 
-  /**
-   * When `seasonFilter` is `null` ("tutte le piante") the slider and month
-   * buttons are only a *preview* of which month the UI is showing — they
-   * must not write to the store, otherwise the canvas would apply
-   * `outOfSeason` (opacity) as if the filter were active, which made new
-   * patches look "disabled" after any nudge of the control.
-   */
-  const [previewMonth, setPreviewMonth] = React.useState(
-    () => new Date().getMonth() + 1,
+  const seasonYear = resolveSeasonYear(seasonFilter);
+
+  const today = React.useMemo(() => new Date(), []);
+  const todayKey = React.useMemo(() => localDayKey(today.getTime()), [today]);
+  const todayYear = today.getFullYear();
+  const todayMonth = today.getMonth() + 1;
+  const todayDay = today.getDate();
+
+  const todayHeading = today.toLocaleDateString("it-IT", {
+    day: "numeric",
+    month: "long",
+  });
+
+  const moon = React.useMemo(
+    () => getMoonPhaseForDate(todayYear, todayMonth, todayDay),
+    [todayYear, todayMonth, todayDay],
   );
 
-  const month = seasonFilter ?? previewMonth;
-  const isFilterActive = seasonFilter !== null;
+  const { days: weatherDays } = useMonthWeather(
+    location,
+    todayYear,
+    todayMonth,
+    Boolean(location),
+  );
+  const todayWeather = weatherDays[todayKey];
+  const wmo = todayWeather ? wmoDayVisual(todayWeather.weatherCode) : null;
 
   return (
     <div className="rounded-xl border border-border bg-card p-3">
@@ -34,78 +57,85 @@ export function SeasonFilter() {
         </div>
         <Button
           variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-[10px] font-mono uppercase tracking-wide text-muted-foreground"
-          onClick={() => {
-            if (seasonFilter === null) {
-              setSeasonFilter(previewMonth);
-            } else {
-              setPreviewMonth(seasonFilter);
-              setSeasonFilter(null);
-            }
-          }}
+          size="icon-lg"
+          className={cn(
+            "shrink-0 touch-manipulation",
+            detailOpen ? "text-foreground" : "text-muted-foreground",
+          )}
+          onClick={() => setDetailOpen((v) => !v)}
+          aria-expanded={detailOpen}
+          aria-label={
+            detailOpen ? "Nascondi calendario mensile" : "Mostra calendario mensile"
+          }
         >
-          {seasonFilter === null ? (
-            <>Attiva</>
+          {detailOpen ? (
+            <ChevronUp className="size-4" aria-hidden />
           ) : (
-            <>
-              <CalendarOff className="size-3" />
-              Disattiva
-            </>
+            <ChevronDown className="size-4" aria-hidden />
           )}
         </Button>
       </div>
 
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="text-2xl font-semibold tracking-tight tabular-nums">
-          {MONTHS_LONG[month - 1]}
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className="text-xl font-semibold tracking-tight capitalize leading-none">
+          {todayHeading}
         </span>
-        <span className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
-          {seasonFilter === null ? "tutte le piante" : "filtro attivo"}
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {wmo && wmo.emoji !== "·" ? (
+            <span
+              className="text-base leading-none"
+              title={wmo.label}
+              aria-label={wmo.label}
+            >
+              {wmo.emoji}
+            </span>
+          ) : (
+            <span
+              className="text-[10px] font-mono text-muted-foreground"
+              title={location ? "Meteo non disponibile" : "Imposta posizione per il meteo"}
+            >
+              ·
+            </span>
+          )}
+          <span title={moon.labelIt} aria-label={moon.labelIt}>
+            <MoonPhaseIcon angleRadians={moon.angleRadians} size={18} />
+          </span>
+        </div>
       </div>
 
       <Slider
-        value={[month]}
+        value={[seasonFilter]}
         min={1}
         max={12}
         step={1}
         onValueChange={(v) => {
           const next = Array.isArray(v) ? v[0] : v;
-          if (seasonFilter === null) {
-            setPreviewMonth(next);
-          } else {
-            setSeasonFilter(next);
-          }
+          setSeasonFilter(next);
         }}
       />
-      <div className="grid grid-cols-12 gap-px text-[9px] font-mono text-muted-foreground mt-1.5 select-none">
+      <div className="grid grid-cols-12 gap-0.5 text-[9px] font-mono text-muted-foreground mt-1.5 select-none">
         {MONTHS.map((m, i) => {
           const idx = i + 1;
-          const selected =
-            (isFilterActive && seasonFilter === idx) ||
-            (!isFilterActive && previewMonth === idx);
+          const selected = seasonFilter === idx;
           return (
             <button
               key={m}
               type="button"
-              onClick={() => {
-                if (seasonFilter === null) {
-                  setPreviewMonth(idx);
-                } else {
-                  setSeasonFilter(idx);
-                }
-              }}
-              className={
-                "py-0.5 text-center hover:text-foreground transition-colors " +
-                (selected ? "text-foreground font-semibold" : "")
-              }
+              onClick={() => setSeasonFilter(idx)}
+              className={cn(
+                "min-h-8 rounded-sm py-1 text-center touch-manipulation transition-colors hover:text-foreground active:bg-muted/60",
+                selected && "bg-muted/50 font-semibold text-foreground",
+              )}
             >
               {m[0]}
             </button>
           );
         })}
       </div>
+
+      {detailOpen ? (
+        <SeasonCalendarGrid year={seasonYear} month={seasonFilter} />
+      ) : null}
     </div>
   );
 }

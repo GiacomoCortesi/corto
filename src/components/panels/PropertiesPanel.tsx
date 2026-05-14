@@ -53,22 +53,19 @@ import { cn } from "@/lib/utils";
 
 /**
  * Barra 12 mesi: verde = semina, blu = trapianto, terracotta = raccolto.
- * Il mese del filtro stagione (se attivo) o il mese del calendario (se disattivo)
- * riceve l'anello di evidenziazione.
+ * Il mese del filtro stagione riceve l'anello di evidenziazione.
  */
 function PlantSeasonTimeline({ plant }: { plant: Plant }) {
   const seasonFilter = useGardenStore((s) => s.seasonFilter);
-  const calendarMonth = new Date().getMonth() + 1;
-  const highlightMonth = seasonFilter ?? calendarMonth;
 
   return (
     <div className="space-y-2.5">
-      <div className="flex items-start justify-between gap-2">
+      <div className="space-y-2">
         <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wide text-muted-foreground">
           <Calendar className="size-3.5 shrink-0" />
           <span>Calendario colturale</span>
         </div>
-        <div className="flex flex-col items-end gap-1 text-[9px] text-muted-foreground">
+        <div className="flex flex-col items-start gap-1 text-[9px] text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <span
               className="size-2 rounded-sm border border-border/50 bg-[var(--sage)]"
@@ -103,9 +100,7 @@ function PlantSeasonTimeline({ plant }: { plant: Plant }) {
           const inS = plant.sowing.includes(m);
           const inT = (plant.transplanting ?? []).includes(m);
           const inH = plant.harvest.includes(m);
-          const isFilter = seasonFilter !== null;
-          const showSeasonRing = isFilter && seasonFilter === m;
-          const showCalendarRing = !isFilter && calendarMonth === m;
+          const showSeasonRing = seasonFilter === m;
 
           let barClass =
             "h-3 w-full rounded-sm border border-border/40 transition-shadow ";
@@ -141,9 +136,6 @@ function PlantSeasonTimeline({ plant }: { plant: Plant }) {
                   barClass,
                   showSeasonRing &&
                     "ring-2 ring-primary ring-offset-1 ring-offset-background",
-                  showCalendarRing &&
-                    !showSeasonRing &&
-                    "ring-1 ring-dashed ring-primary/60",
                 )}
                 title={`${MONTHS_LONG[m - 1]}: ${
                   inS && inT && inH
@@ -172,54 +164,18 @@ function PlantSeasonTimeline({ plant }: { plant: Plant }) {
       </div>
 
       <p className="text-[10px] text-muted-foreground leading-snug">
-        {seasonFilter === null ? (
+        {plantActiveInMonth(plant, seasonFilter) ? (
           <>
-            <span className="font-mono text-foreground/80">Mese oggi</span> (anello
-            tratteggiato): {MONTHS_LONG[highlightMonth - 1]}.
-            {plantActiveInMonth(plant, highlightMonth) ? (
-              <>
-                {" "}
-                {plant.sowing.includes(highlightMonth) &&
-                (plant.transplanting ?? []).includes(highlightMonth) &&
-                plant.harvest.includes(highlightMonth)
-                  ? "Semina, trapianto e raccolto."
-                  : plant.sowing.includes(highlightMonth) &&
-                      (plant.transplanting ?? []).includes(highlightMonth)
-                    ? "Periodo di semina e trapianto."
-                    : plant.sowing.includes(highlightMonth) &&
-                        plant.harvest.includes(highlightMonth)
-                      ? "Periodo di semina e raccolto."
-                      : (plant.transplanting ?? []).includes(highlightMonth) &&
-                          plant.harvest.includes(highlightMonth)
-                        ? "Periodo di trapianto e raccolto."
-                        : plant.sowing.includes(highlightMonth)
-                          ? "Periodo di semina."
-                          : (plant.transplanting ?? []).includes(highlightMonth)
-                            ? "Periodo di trapianto."
-                            : "Periodo di raccolto."}
-              </>
-            ) : (
-              <> Nessuna semina, trapianto o raccolto indicato per questo mese.</>
-            )}
+            {plant.sowing.includes(seasonFilter) &&
+            plant.harvest.includes(seasonFilter)
+              ? MONTHS_LONG[seasonFilter - 1] + " è periodo di semina e raccolto."
+              : plant.sowing.includes(seasonFilter)
+                ? MONTHS_LONG[seasonFilter - 1] + " è periodo di semina."
+                : MONTHS_LONG[seasonFilter - 1] + " è periodo di raccolto."}
           </>
         ) : (
-          <>
-            <span className="font-mono text-foreground/80">Filtro stagione</span> (anello
-            pieno): {MONTHS_LONG[seasonFilter - 1]}.{" "}
-            {plantActiveInMonth(plant, seasonFilter) ? (
-              <>
-                {plant.sowing.includes(seasonFilter) &&
-                plant.harvest.includes(seasonFilter)
-                  ? "In questo mese: semina e raccolto."
-                  : plant.sowing.includes(seasonFilter)
-                    ? "In questo mese: semina."
-                    : "In questo mese: raccolto."}
-              </>
-            ) : (
-              <>Nessun dato semina/raccolto in questo mese (la pianta appare
-              attenuata sull&apos;aiuola).</>
-            )}
-          </>
+          <>Nessun dato semina/raccolto in questo mese (la pianta appare
+          attenuata sull&apos;aiuola).</>
         )}
       </p>
     </div>
