@@ -1,9 +1,9 @@
 import type { Bed, PlantPatch } from "@/lib/types";
 
 export const GEOMETRY_EPS_CM = 0.01;
-export const MIN_PATCH_SIDE_CM = 1;
+export const MIN_PATCH_SIDE_CM = 17;
 export const MIN_BED_SIDE_CM = 30;
-export const MAX_BED_SIDE_CM = 1500;
+export const MAX_BED_SIDE_CM = 3000;
 /** Max edge gap (cm) still treated as companion neighbors (legacy grid cell was 30 cm). */
 export const COMPANION_MAX_GAP_CM = 30;
 /** Pixels per centimeter when rendering the canvas (fixed ratio). */

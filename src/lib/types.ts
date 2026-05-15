@@ -168,6 +168,8 @@ export type PlantPatch = {
   spacingMode?: SpacingMode;
   /** Override layout */
   arrangement?: PatchArrangement;
+  /** Manual plant count; when unset, density is derived from footprint and spacing */
+  plantCount?: number;
 };
 
 export type Bed = {

@@ -88,7 +88,7 @@ export function CompanionPanel() {
           <Separator />
           <div>
             <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-2">
-              Dal catalogo · {selectedPlant.name}
+              {selectedPlant.name}
             </div>
             <PlantCompanionCatalog plant={selectedPlant} />
           </div>

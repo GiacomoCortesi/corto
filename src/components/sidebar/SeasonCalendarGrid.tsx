@@ -10,6 +10,7 @@ import { wmoDayVisual } from "@/lib/weather/wmo-labels";
 import { useMonthWeather } from "@/hooks/useMonthWeather";
 import { useGardenStore } from "@/lib/store";
 import { SeasonDayDetail } from "@/components/sidebar/SeasonDayDetail";
+import { WeatherDayTooltip } from "@/components/sidebar/WeatherDayTooltip";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -48,7 +49,7 @@ export function SeasonCalendarGrid({ year, month }: Props) {
     location,
     year,
     month,
-    true,
+    Boolean(location),
   );
 
   const selectedEvents = selectedDay ? eventsByDay.get(selectedDay) ?? [] : [];
@@ -142,13 +143,26 @@ export function SeasonCalendarGrid({ year, month }: Props) {
                 title={moon.labelIt}
               />
               <span className="flex items-center gap-0.5 h-2.5 leading-none">
-                {wmo && wmo.emoji !== "·" ? (
-                  <span className="text-[8px]" aria-hidden title={wmo.label}>
-                    {wmo.emoji}
-                  </span>
-                ) : (
-                  <span className="text-[8px] text-transparent select-none">·</span>
-                )}
+                <WeatherDayTooltip
+                  weather={weather}
+                  location={location}
+                  side="top"
+                  stopPropagation
+                >
+                  {wmo && wmo.emoji !== "·" ? (
+                    <span
+                      className="text-[8px] cursor-default"
+                      aria-hidden
+                      aria-label={wmo.label}
+                    >
+                      {wmo.emoji}
+                    </span>
+                  ) : (
+                    <span className="text-[8px] text-transparent select-none cursor-default">
+                      ·
+                    </span>
+                  )}
+                </WeatherDayTooltip>
                 {hasDone ? (
                   <span
                     className="size-1 rounded-full bg-[var(--sage)]"

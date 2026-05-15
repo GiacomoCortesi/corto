@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { perSquareMeterLabelForPlant } from "@/lib/utils/spacing";
 import { formatMonthRanges } from "@/lib/data/plants";
 import type { Plant } from "@/lib/types";
-import { Sun, CloudSun, CloudMoon, Droplet, Droplets, Plus } from "lucide-react";
+import { Sun, CloudSun, CloudMoon, Droplet, Droplets, Plus, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -24,6 +24,10 @@ type Props = {
   draggable?: boolean;
   /** When false, hides today/season hints and shows static sowing/transplant periods. */
   showTodayHints?: boolean;
+  /** Multi-select mode: tap toggles selection instead of adding. */
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 };
 
 const SUN_ICON = {
@@ -45,6 +49,9 @@ export function PlantCard({
   onAdded,
   draggable = true,
   showTodayHints = true,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
 }: Props) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `plant:${plant.id}`,
@@ -74,6 +81,12 @@ export function PlantCard({
       style={{ animationDelay: `${index * 18}ms` }}
       onClick={(e) => {
         if (isDragging) return;
+        if (selectable) {
+          e.preventDefault();
+          e.stopPropagation();
+          onToggleSelect?.();
+          return;
+        }
         const tapToAdd =
           !draggable ||
           (typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches);
@@ -83,15 +96,31 @@ export function PlantCard({
           quickAdd();
         }
       }}
+      role={selectable ? "checkbox" : undefined}
+      aria-checked={selectable ? selected : undefined}
       className={cn(
         "group relative rounded-xl border border-border bg-card p-3 transition-all duration-150",
-        draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
+        selectable ? "cursor-pointer" : draggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
         "hover:border-primary/40 hover:shadow-sm hover:-translate-y-0.5",
         "fade-in-up",
         isDragging && "opacity-30",
         showTodayHints && outOfSeason && "opacity-55",
+        selectable && selected && "border-primary bg-primary/5 ring-1 ring-primary/30",
       )}
     >
+      {selectable ? (
+        <span
+          className={cn(
+            "absolute top-2.5 right-2.5 size-5 rounded-md border grid place-items-center transition-colors",
+            selected
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border bg-background/80 text-transparent",
+          )}
+          aria-hidden
+        >
+          <Check className="size-3" strokeWidth={3} />
+        </span>
+      ) : null}
       <div className="flex items-center gap-3">
         <div className="size-10 rounded-lg bg-muted/70 grid place-items-center text-2xl shrink-0">
           {plant.emoji}
@@ -159,22 +188,24 @@ export function PlantCard({
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              quickAdd();
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className={cn(
-              "size-8 rounded-lg border border-border bg-muted/50 text-muted-foreground grid place-items-center transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary",
-              draggable && "sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100",
-            )}
-            aria-label={`Aggiungi ${plant.name} all'aiuola`}
-          >
-            <Plus className="size-3.5" />
-          </button>
+          {!selectable ? (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                quickAdd();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              className={cn(
+                "size-8 rounded-lg border border-border bg-muted/50 text-muted-foreground grid place-items-center transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary",
+                draggable && "sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100",
+              )}
+              aria-label={`Aggiungi ${plant.name} all'aiuola`}
+            >
+              <Plus className="size-3.5" />
+            </button>
+          ) : null}
           <div className="flex items-center gap-1 text-muted-foreground">
             <Tooltip>
             <TooltipTrigger asChild>

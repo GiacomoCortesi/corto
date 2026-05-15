@@ -1,4 +1,8 @@
-import type { WeatherDaySource } from "@/lib/weather/openmeteo";
+import type {
+  ForecastDay,
+  ForecastHour,
+  WeatherDaySource,
+} from "@/lib/weather/openmeteo";
 
 export type WmoDayVisual = {
   emoji: string;
@@ -40,4 +44,53 @@ export function weatherSourceLabel(source?: WeatherDaySource): string | null {
     default:
       return null;
   }
+}
+
+export type WeatherDayDetailLine = {
+  label: string;
+  value: string;
+};
+
+/** Structured lines for weather tooltips and compact summaries. */
+export function weatherDayDetailLines(
+  weather: ForecastDay,
+): WeatherDayDetailLine[] {
+  const wmo = wmoDayVisual(weather.weatherCode);
+  const lines: WeatherDayDetailLine[] = [
+    { label: "Condizioni", value: `${wmo.emoji} ${wmo.label}`.trim() },
+  ];
+
+  const temps = formatTempRange(weather.tMin, weather.tMax);
+  if (temps) lines.push({ label: "Temperature", value: temps });
+
+  if (weather.precipMm != null && weather.precipMm >= 0.1) {
+    lines.push({
+      label: "Pioggia",
+      value: `${weather.precipMm.toFixed(1)} mm`,
+    });
+  } else if (weather.precipProb != null && weather.precipProb >= 10) {
+    lines.push({
+      label: "Prob. pioggia",
+      value: `${Math.round(weather.precipProb)}%`,
+    });
+  }
+
+  const source = weatherSourceLabel(weather.source);
+  if (source) lines.push({ label: "Fonte", value: source });
+
+  return lines;
+}
+
+/** Compact one-line label for an hourly row. */
+export function formatHourlyRow(hour: ForecastHour): string {
+  const wmo = wmoDayVisual(hour.weatherCode);
+  const temp =
+    hour.temperature != null ? `${Math.round(hour.temperature)}°` : "—";
+  const rain =
+    hour.precipMm != null && hour.precipMm >= 0.1
+      ? ` · ${hour.precipMm.toFixed(1)} mm`
+      : hour.precipProb != null && hour.precipProb >= 15
+        ? ` · ${Math.round(hour.precipProb)}%`
+        : "";
+  return `${hour.time}  ${wmo.emoji}  ${temp}${rain}`;
 }

@@ -57,7 +57,7 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
   return (
     <Card
       className={cn(
-        "rounded-2xl gap-0 py-0 shadow-sm transition-shadow duration-200",
+        "rounded-md gap-0 py-0 shadow-sm transition-shadow duration-200",
         "border-border bg-card",
         "hover:shadow-md",
         selected && "ring-2 ring-primary shadow-lg",

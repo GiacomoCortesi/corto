@@ -174,7 +174,7 @@ describe("geometry", () => {
   });
 
   it("clampBedSizeCm enforces min and max side", () => {
-    assert.deepEqual(clampBedSizeCm(10, 2000), { width: 30, height: 1500 });
+    assert.deepEqual(clampBedSizeCm(10, 4000), { width: 30, height: 3000 });
   });
 
   it("clampPatchSizeCm respects bed bounds from patch position", () => {
@@ -205,6 +205,16 @@ describe("geometry", () => {
     const p = patch({ positionCm: { x: 10, y: 10 }, sizeCm: { width: 20, height: 20 } });
     const next = patchSizeFromResizeDelta(p, b, { x: PX_PER_CM * 5, y: PX_PER_CM * 2 });
     assert.deepEqual(next, { width: 25, height: 22 });
+  });
+
+  it("patchSizeFromResizeDelta cannot shrink below MIN_PATCH_SIDE_CM", () => {
+    const b = bed({ widthCm: 100, heightCm: 100 });
+    const p = patch({ positionCm: { x: 10, y: 10 }, sizeCm: { width: 20, height: 20 } });
+    const next = patchSizeFromResizeDelta(p, b, {
+      x: -PX_PER_CM * 20,
+      y: -PX_PER_CM * 20,
+    });
+    assert.deepEqual(next, { width: 17, height: 17 });
   });
 
   it("bedSizeFromResizeDelta grows bed from SE handle", () => {

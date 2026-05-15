@@ -20,6 +20,7 @@ import { plantById } from "@/lib/data/plants";
 import {
   clampBedSizeCm,
   clampPatchPositionCm,
+  clampPatchSizeCm,
   defaultPatchSizeCm,
   MAX_BED_SIDE_CM,
   migratePatchV6ToV7,
@@ -33,6 +34,9 @@ import {
   patchFitsInBed,
   patchesOverlap,
 } from "@/lib/utils/spacing";
+import { normalizeGardenLocation } from "@/lib/weather/location";
+import { clearHourlyWeatherCache } from "@/lib/weather/hourly-weather-cache";
+import { clearMonthWeatherCache } from "@/lib/weather/month-weather-cache";
 
 const HISTORY_LIMIT = 30;
 
@@ -146,6 +150,12 @@ type Actions = {
     bedId: string,
     patchId: string,
     arrangement: PatchArrangement | undefined,
+  ) => boolean;
+  /** Sets or clears manual plant count for a patch. */
+  setPatchPlantCount: (
+    bedId: string,
+    patchId: string,
+    plantCount: number | undefined,
   ) => boolean;
 
   /** Creates a patch at a metric position (fluid catalog drop). */
@@ -291,12 +301,17 @@ export const useGardenStore = create<GardenStore>()(
       future: [],
 
       initGarden: (name, sunOrientation, location) => {
+        const normalizedLocation = normalizeGardenLocation(location);
+        if (normalizedLocation) {
+          clearMonthWeatherCache();
+          clearHourlyWeatherCache();
+        }
         set({
           meta: {
             name,
             sunOrientation,
             createdAt: Date.now(),
-            ...(location ? { location } : {}),
+            ...(normalizedLocation ? { location: normalizedLocation } : {}),
           },
           beds: [],
           events: [],
@@ -339,9 +354,20 @@ export const useGardenStore = create<GardenStore>()(
 
       setGardenLocation: (location) => {
         const state = get();
+        const normalizedLocation = normalizeGardenLocation(location);
+        const prev = state.meta.location;
+        const changed =
+          (prev?.lat !== normalizedLocation?.lat) ||
+          (prev?.lon !== normalizedLocation?.lon) ||
+          (prev?.timezone ?? "") !== (normalizedLocation?.timezone ?? "") ||
+          Boolean(prev) !== Boolean(normalizedLocation);
+        if (changed) {
+          clearMonthWeatherCache();
+          clearHourlyWeatherCache();
+        }
         set({
-          meta: location
-            ? { ...state.meta, location }
+          meta: normalizedLocation
+            ? { ...state.meta, location: normalizedLocation }
             : (() => {
                 // Removes location without leaving the key as undefined in JSON.
                 const next = { ...state.meta };
@@ -525,12 +551,12 @@ export const useGardenStore = create<GardenStore>()(
       resizePatchCm: (bedId, patchId, sizeCm) => {
         const bed = get().beds.find((b) => b.id === bedId);
         if (!bed) return false;
-        return applyPatchUpdate(get, set, bedId, patchId, (current) => ({
-          ...current,
-          sizeCm: {
-            width: quantizeCm(sizeCm.width),
-            height: quantizeCm(sizeCm.height),
-          },
+        const current = bed.patches.find((p) => p.id === patchId);
+        if (!current) return false;
+        const clamped = clampPatchSizeCm(current, bed, sizeCm);
+        return applyPatchUpdate(get, set, bedId, patchId, (patch) => ({
+          ...patch,
+          sizeCm: clamped,
         }));
       },
 
@@ -565,6 +591,12 @@ export const useGardenStore = create<GardenStore>()(
         applyPatchUpdate(get, set, bedId, patchId, (current) => ({
           ...current,
           arrangement,
+        })),
+
+      setPatchPlantCount: (bedId, patchId, plantCount) =>
+        applyPatchUpdate(get, set, bedId, patchId, (current) => ({
+          ...current,
+          plantCount,
         })),
 
       addPlantToBedAtCm: (bedId, plantId, positionCm) =>
@@ -1007,6 +1039,16 @@ export function migratePersistedState(persisted: unknown, fromVersion: number) {
   }
   if (typeof normalized.seasonFilter !== "number") {
     state = { ...state, seasonFilter: defaultSeasonMonth() } as typeof state;
+  }
+  const meta = (state as Partial<State>).meta;
+  if (meta && typeof meta === "object") {
+    const loc = normalizeGardenLocation(
+      (meta as GardenMeta).location,
+    );
+    const nextMeta = { ...(meta as GardenMeta) };
+    if (loc) nextMeta.location = loc;
+    else delete nextMeta.location;
+    state = { ...state, meta: nextMeta } as typeof state;
   }
   return state as Partial<State>;
 }

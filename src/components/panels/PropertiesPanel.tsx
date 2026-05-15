@@ -358,6 +358,7 @@ export function PropertiesPanel() {
   const resizePatchCm = useGardenStore((s) => s.resizePatchCm);
   const setPatchSpacing = useGardenStore((s) => s.setPatchSpacing);
   const setPatchArrangement = useGardenStore((s) => s.setPatchArrangement);
+  const setPatchPlantCount = useGardenStore((s) => s.setPatchPlantCount);
 
   if (!selection) {
     return <GardenSection />;
@@ -437,6 +438,9 @@ export function PropertiesPanel() {
             setPatchArrangement(bed.id, patch.id, arrangement),
             "Disposizione rifiutata",
           )
+        }
+        onPlantCountChange={(plantCount) =>
+          setPatchPlantCount(bed.id, patch.id, plantCount)
         }
       />
 
@@ -695,6 +699,7 @@ function PatchComposition({
   onResize,
   onSpacingChange,
   onArrangementChange,
+  onPlantCountChange,
 }: {
   bed: Bed;
   patch: PlantPatch;
@@ -702,6 +707,7 @@ function PatchComposition({
   onResize: (sizeCm: { width: number; height: number }) => void;
   onSpacingChange: (cm: number | undefined) => void;
   onArrangementChange: (arrangement: PatchArrangement | undefined) => void;
+  onPlantCountChange: (plantCount: number | undefined) => void;
 }) {
   const spacing = patchSpacingCm(patch, plant);
   const arrangement = patchEffectiveArrangement(patch, plant);
@@ -729,6 +735,47 @@ function PatchComposition({
 
   const isCustomSpacing = patch.spacingCm !== undefined;
   const isCustomArrangement = patch.arrangement !== undefined;
+  const isCustomPlantCount = patch.plantCount !== undefined;
+
+  const [plantCountDraft, setPlantCountDraft] = React.useState(
+    isCustomPlantCount
+      ? String(patch.plantCount)
+      : density.showTotalLessThanOne
+        ? ""
+        : String(density.calculatedPlants),
+  );
+  React.useEffect(() => {
+    setPlantCountDraft(
+      patch.plantCount !== undefined
+        ? String(patch.plantCount)
+        : density.showTotalLessThanOne
+          ? ""
+          : String(density.calculatedPlants),
+    );
+  }, [density.calculatedPlants, density.showTotalLessThanOne, patch.plantCount]);
+
+  const commitPlantCount = () => {
+    const trimmed = plantCountDraft.trim();
+    if (trimmed === "") {
+      onPlantCountChange(undefined);
+      return;
+    }
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      setPlantCountDraft(
+        patch.plantCount !== undefined
+          ? String(patch.plantCount)
+          : density.showTotalLessThanOne
+            ? ""
+            : String(density.calculatedPlants),
+      );
+      return;
+    }
+    const clamped = Math.max(1, Math.min(9999, Math.round(parsed)));
+    onPlantCountChange(
+      clamped === density.calculatedPlants ? undefined : clamped,
+    );
+  };
 
   const commitSpacing = () => {
     const trimmed = spacingDraft.trim();
@@ -848,12 +895,45 @@ function PatchComposition({
         />
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-3 space-y-1.5">
-        <FootprintRow
-          label="Piante totali"
-          value={density.showTotalLessThanOne ? "<1" : String(density.totalPlants)}
-          hint={`${Math.round(patch.sizeCm.width)}×${Math.round(patch.sizeCm.height)} cm`}
+      <div className="space-y-1.5">
+        <div className="flex items-center justify-between">
+          <Label
+            htmlFor="patch-plant-count"
+            className="text-[10px] font-mono uppercase tracking-wide text-muted-foreground"
+          >
+            Piante totali
+          </Label>
+          {isCustomPlantCount ? (
+            <button
+              type="button"
+              onClick={() => onPlantCountChange(undefined)}
+              className="text-[10px] font-mono text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+            >
+              ripristina ({density.calculatedPlants || "—"})
+            </button>
+          ) : (
+            <span className="text-[10px] font-mono text-muted-foreground">
+              {density.showTotalLessThanOne ? "stima <1" : "da densità"}
+            </span>
+          )}
+        </div>
+        <Input
+          id="patch-plant-count"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          placeholder={density.showTotalLessThanOne ? "<1" : undefined}
+          value={plantCountDraft}
+          onChange={(e) => setPlantCountDraft(e.target.value)}
+          onBlur={commitPlantCount}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+          }}
+          className="h-8 font-mono tabular-nums"
         />
+      </div>
+
+      <div className="rounded-xl border border-border bg-card p-3 space-y-1.5">
         <FootprintRow
           label="Ingombro"
           value={`${Math.round(displayFootprint.widthCm)}×${Math.round(displayFootprint.heightCm)} cm`}

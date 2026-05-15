@@ -3,24 +3,12 @@
 import * as React from "react";
 import type { ForecastDay } from "@/lib/weather/openmeteo";
 import type { GardenLocation } from "@/lib/types";
-
-type CacheEntry = {
-  at: number;
-  days: Record<string, ForecastDay>;
-  partial: boolean;
-  timezone: string;
-};
-
-const CACHE_TTL_MS = 45 * 60 * 1000;
-const cache = new Map<string, CacheEntry>();
-
-function cacheKey(
-  loc: GardenLocation,
-  year: number,
-  month: number,
-): string {
-  return `${loc.lat},${loc.lon},${loc.timezone ?? "auto"},${year},${month}`;
-}
+import { normalizeGardenLocation } from "@/lib/weather/location";
+import {
+  getCachedMonthWeather,
+  monthWeatherCacheKey,
+  setCachedMonthWeather,
+} from "@/lib/weather/month-weather-cache";
 
 export function useMonthWeather(
   location: GardenLocation | undefined,
@@ -38,18 +26,27 @@ export function useMonthWeather(
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  const normalized = React.useMemo(
+    () => normalizeGardenLocation(location),
+    [location],
+  );
+  const lat = normalized?.lat;
+  const lon = normalized?.lon;
+  const timezone = normalized?.timezone;
+
   React.useEffect(() => {
-    if (!enabled || !location) {
+    if (!enabled || lat == null || lon == null) {
       setDays({});
       setPartial(false);
       setLoading(false);
-      setError(location ? null : "Posizione non impostata");
+      setError(normalized ? null : "Posizione non impostata");
       return;
     }
 
-    const key = cacheKey(location, year, month);
-    const hit = cache.get(key);
-    if (hit && Date.now() - hit.at < CACHE_TTL_MS) {
+    const loc: GardenLocation = { lat, lon, timezone, label: normalized?.label };
+    const key = monthWeatherCacheKey(loc, year, month);
+    const hit = getCachedMonthWeather(key);
+    if (hit) {
       setDays(hit.days);
       setPartial(hit.partial);
       setLoading(false);
@@ -62,30 +59,38 @@ export function useMonthWeather(
     setError(null);
 
     const url = new URL("/api/calendar-weather", window.location.origin);
-    url.searchParams.set("lat", String(location.lat));
-    url.searchParams.set("lon", String(location.lon));
+    url.searchParams.set("lat", String(lat));
+    url.searchParams.set("lon", String(lon));
     url.searchParams.set("year", String(year));
     url.searchParams.set("month", String(month));
-    if (location.timezone) url.searchParams.set("timezone", location.timezone);
+    if (timezone) url.searchParams.set("timezone", timezone);
 
     fetch(url.toString(), { signal: ac.signal })
       .then(async (res) => {
-        const data = (await res.json()) as {
+        let data: {
           days?: Record<string, ForecastDay>;
           partial?: boolean;
           error?: string;
         };
+        try {
+          data = (await res.json()) as typeof data;
+        } catch {
+          throw new Error("Errore meteo");
+        }
         if (!res.ok) throw new Error(data.error ?? "Errore meteo");
         const nextDays = data.days ?? {};
         const nextPartial = Boolean(data.partial);
-        cache.set(key, {
-          at: Date.now(),
+        if (Object.keys(nextDays).length === 0) {
+          throw new Error(data.error ?? "Dati meteo non disponibili.");
+        }
+        setCachedMonthWeather(key, {
           days: nextDays,
           partial: nextPartial,
-          timezone: location.timezone ?? "auto",
+          timezone: timezone ?? "auto",
         });
         setDays(nextDays);
         setPartial(nextPartial);
+        setError(null);
       })
       .catch((err: unknown) => {
         if (ac.signal.aborted) return;
@@ -98,7 +103,7 @@ export function useMonthWeather(
       });
 
     return () => ac.abort();
-  }, [enabled, location, year, month]);
+  }, [enabled, lat, lon, timezone, normalized?.label, year, month]);
 
   return { days, partial, loading, error };
 }

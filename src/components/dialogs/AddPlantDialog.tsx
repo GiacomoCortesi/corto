@@ -12,7 +12,9 @@ import { Input } from "@/components/ui/input";
 import { PLANTS } from "@/lib/data/plants";
 import { PLANT_CATEGORIES, type PlantCategoryFilter } from "@/lib/data/plant-categories";
 import { PlantCard } from "@/components/sidebar/PlantCard";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { quickAddPlantsToGarden } from "@/lib/utils/quick-add-plant";
 import { Search, Sprout } from "lucide-react";
 
 type Props = {
@@ -23,13 +25,31 @@ type Props = {
 export function AddPlantDialog({ open, onOpenChange }: Props) {
   const [query, setQuery] = React.useState("");
   const [category, setCategory] = React.useState<PlantCategoryFilter>("all");
+  const [multiSelect, setMultiSelect] = React.useState(false);
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(() => new Set());
 
   React.useEffect(() => {
     if (!open) {
       setQuery("");
       setCategory("all");
+      setMultiSelect(false);
+      setSelectedIds(new Set());
     }
   }, [open]);
+
+  const togglePlantSelection = React.useCallback((plantId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(plantId)) next.delete(plantId);
+      else next.add(plantId);
+      return next;
+    });
+  }, []);
+
+  const selectedPlants = React.useMemo(
+    () => PLANTS.filter((p) => selectedIds.has(p.id)),
+    [selectedIds],
+  );
 
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -46,13 +66,31 @@ export function AddPlantDialog({ open, onOpenChange }: Props) {
     onOpenChange(false);
   }, [onOpenChange]);
 
+  const handleBatchAdd = React.useCallback(() => {
+    if (selectedPlants.length === 0) return;
+    quickAddPlantsToGarden(selectedPlants, {
+      onAdded: () => {
+        setSelectedIds(new Set());
+        onOpenChange(false);
+      },
+    });
+  }, [onOpenChange, selectedPlants]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!flex h-[min(88dvh,720px)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent
+        className={cn(
+          "!grid h-[min(88dvh,720px)] w-[calc(100%-1rem)] max-w-[calc(100%-1rem)] gap-0 overflow-hidden p-0 sm:max-w-xl",
+          multiSelect && selectedIds.size > 0
+            ? "grid-rows-[auto_auto_minmax(0,1fr)_auto]"
+            : "grid-rows-[auto_auto_minmax(0,1fr)]",
+        )}
+      >
         <DialogHeader className="shrink-0 border-b border-border px-4 py-3 pr-12">
           <DialogTitle>Aggiungi all&apos;aiuola</DialogTitle>
           <DialogDescription>
-            Scegli una pianta: esigenze di sole e acqua, periodi di semina e trapianto.
+            Scegli una o più piante: tocca per aggiungere subito, oppure attiva la selezione
+            multipla per inserirle in batch.
           </DialogDescription>
         </DialogHeader>
 
@@ -67,7 +105,24 @@ export function AddPlantDialog({ open, onOpenChange }: Props) {
             />
           </div>
 
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap items-center gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setMultiSelect((v) => {
+                  if (v) setSelectedIds(new Set());
+                  return !v;
+                });
+              }}
+              className={cn(
+                "rounded-full border px-2 py-1 text-[10px] font-mono uppercase tracking-wide transition-colors",
+                multiSelect
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground",
+              )}
+            >
+              Selezione multipla
+            </button>
             {PLANT_CATEGORIES.map((c) => (
               <button
                 key={c.id}
@@ -87,7 +142,7 @@ export function AddPlantDialog({ open, onOpenChange }: Props) {
         </div>
 
         <div
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
+          className="min-h-0 overflow-y-auto overscroll-contain touch-pan-y [-webkit-overflow-scrolling:touch]"
           onWheel={(e) => e.stopPropagation()}
         >
           <div className="px-4 py-3">
@@ -107,13 +162,32 @@ export function AddPlantDialog({ open, onOpenChange }: Props) {
                   index={i}
                   draggable={false}
                   showTodayHints={false}
-                  onAdded={handleAdded}
+                  selectable={multiSelect}
+                  selected={selectedIds.has(plant.id)}
+                  onToggleSelect={() => togglePlantSelection(plant.id)}
+                  onAdded={multiSelect ? undefined : handleAdded}
                 />
               ))}
             </div>
           )}
           </div>
         </div>
+
+        {multiSelect && selectedIds.size > 0 ? (
+          <div className="flex shrink-0 items-center gap-2 border-t border-border bg-card/95 px-4 py-3 backdrop-blur">
+            <Button type="button" className="flex-1" onClick={handleBatchAdd}>
+              Aggiungi {selectedIds.size}{" "}
+              {selectedIds.size === 1 ? "pianta" : "piante"}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setSelectedIds(new Set())}
+            >
+              Deseleziona
+            </Button>
+          </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

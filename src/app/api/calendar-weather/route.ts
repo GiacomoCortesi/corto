@@ -57,11 +57,11 @@ export async function GET(req: NextRequest): Promise<Response> {
 
   const result = await fetchCalendarMonthWeather(lat, lon, year, month, timezone);
 
-  if (!result) {
+  if (!result || Object.keys(result.days).length === 0) {
     return json({
       year,
       month,
-      timezone,
+      timezone: result?.timezone ?? timezone,
       days: {},
       partial: true,
       error: "Dati meteo non disponibili.",

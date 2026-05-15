@@ -48,6 +48,39 @@ export type Forecast = {
   days: ForecastDay[];
 };
 
+export type ForecastHour = {
+  /** Local time HH:mm */
+  time: string;
+  temperature: number | null;
+  precipMm: number | null;
+  precipProb: number | null;
+  weatherCode: number | null;
+};
+
+export type HourlyDay = {
+  date: string;
+  timezone: string;
+  hours: ForecastHour[];
+};
+
+const HOURLY_FIELDS = [
+  "temperature_2m",
+  "precipitation",
+  "weather_code",
+  "precipitation_probability",
+] as const;
+
+type RawHourlyResponse = {
+  timezone?: string;
+  hourly?: {
+    time?: string[];
+    temperature_2m?: (number | null)[];
+    precipitation?: (number | null)[];
+    weather_code?: (number | null)[];
+    precipitation_probability?: (number | null)[];
+  };
+};
+
 type RawForecastResponse = {
   timezone?: string;
   daily?: {
@@ -124,6 +157,107 @@ async function fetchDailyRange(
     timezone: data.timezone ?? timezone,
     days: parseDailyRows(data, includePrecipProb),
   };
+}
+
+function parseHourlyForDate(data: RawHourlyResponse, date: string): ForecastHour[] {
+  const times = data.hourly?.time ?? [];
+  const hours: ForecastHour[] = [];
+  for (let i = 0; i < times.length; i++) {
+    const iso = times[i];
+    if (!iso.startsWith(date)) continue;
+    hours.push({
+      time: iso.slice(11, 16),
+      temperature: pickAt(data.hourly?.temperature_2m, i),
+      precipMm: pickAt(data.hourly?.precipitation, i),
+      precipProb: pickAt(data.hourly?.precipitation_probability, i),
+      weatherCode: pickAt(data.hourly?.weather_code, i),
+    });
+  }
+  return hours;
+}
+
+async function fetchHourlyRange(
+  baseUrl: string,
+  lat: number,
+  lon: number,
+  date: string,
+  timezone: string,
+  includePrecipProb: boolean,
+): Promise<HourlyDay | null> {
+  const url = new URL(baseUrl);
+  url.searchParams.set("latitude", String(lat));
+  url.searchParams.set("longitude", String(lon));
+  url.searchParams.set(
+    "hourly",
+    includePrecipProb
+      ? HOURLY_FIELDS.join(",")
+      : "temperature_2m,precipitation,weather_code",
+  );
+  url.searchParams.set("start_date", date);
+  url.searchParams.set("end_date", date);
+  url.searchParams.set("timezone", timezone);
+
+  let res: Response;
+  try {
+    res = await fetch(url.toString(), { cache: "no-store" });
+  } catch {
+    return null;
+  }
+  if (!res.ok) return null;
+
+  let data: RawHourlyResponse;
+  try {
+    data = (await res.json()) as RawHourlyResponse;
+  } catch {
+    return null;
+  }
+
+  return {
+    date,
+    timezone: data.timezone ?? timezone,
+    hours: parseHourlyForDate(data, date),
+  };
+}
+
+/**
+ * Hourly breakdown for a single calendar day (forecast or archive).
+ * Climatology days return an empty hour list.
+ */
+export async function fetchHourlyForDay(
+  lat: number,
+  lon: number,
+  date: string,
+  timezone = "auto",
+  source?: WeatherDaySource,
+): Promise<HourlyDay | null> {
+  if (source === "climatology") {
+    return { date, timezone, hours: [] };
+  }
+
+  const useArchive = source === "archive";
+  const result = await fetchHourlyRange(
+    useArchive ? ARCHIVE_URL : FORECAST_URL,
+    lat,
+    lon,
+    date,
+    timezone,
+    !useArchive,
+  );
+  if (result && result.hours.length > 0) return result;
+
+  if (!useArchive) {
+    const archive = await fetchHourlyRange(
+      ARCHIVE_URL,
+      lat,
+      lon,
+      date,
+      timezone,
+      false,
+    );
+    if (archive && archive.hours.length > 0) return archive;
+  }
+
+  return result;
 }
 
 /**

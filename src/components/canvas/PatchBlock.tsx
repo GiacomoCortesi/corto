@@ -15,7 +15,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { GripVertical, X } from "lucide-react";
+import { X } from "lucide-react";
 import {
   arrangementLabel,
   patchDensitySummaryForUI,
@@ -26,6 +26,7 @@ import {
 } from "@/lib/utils/spacing";
 import { patchSizeFromResizeDelta } from "@/lib/utils/geometry";
 import { toast } from "sonner";
+import { CanvasResizeHandle } from "@/components/canvas/CanvasResizeHandle";
 
 type Props = {
   bedId: string;
@@ -114,7 +115,14 @@ export function PatchBlock({
     selection.bedId === bedId &&
     selection.patchId === patch.id;
 
+  const compactPatch =
+    renderPatch.sizeCm.width < 30 || renderPatch.sizeCm.height < 30;
+  const showPlantText = !compactPatch;
+  const showPatchControls =
+    isSelected || isResizing || isDragging || compactPatch;
+
   const handleClick = (e: React.MouseEvent) => {
+    if (isDragging) return;
     e.stopPropagation();
     setSelection({ kind: "plant", bedId, patchId: patch.id });
   };
@@ -174,10 +182,13 @@ export function PatchBlock({
   return (
     <div
       ref={setNodeRef}
+      {...listeners}
+      {...attributes}
       onClick={handleClick}
       className={cn(
         "group relative rounded-md border-0 transition-[opacity,box-shadow] duration-150",
-        "flex flex-col items-center justify-center select-none cursor-pointer overflow-hidden",
+        "flex flex-col items-center justify-center select-none touch-none touch-manipulation",
+        "cursor-grab active:cursor-grabbing",
         seasonMode === "none" && "bg-card",
         seasonMode === "sowing" && "bg-[var(--sage-soft)]",
         seasonMode === "transplanting" && "bg-[var(--ochre-soft)]",
@@ -223,9 +234,11 @@ export function PatchBlock({
             >
               {plant.emoji}
             </span>
-            <span className="text-[8px] font-mono uppercase tracking-wide text-muted-foreground truncate max-w-full">
-              {plant.name.slice(0, 8)}
-            </span>
+            {showPlantText ? (
+              <span className="text-[8px] font-mono uppercase tracking-wide text-muted-foreground truncate max-w-full">
+                {plant.name.slice(0, 8)}
+              </span>
+            ) : null}
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
@@ -243,7 +256,7 @@ export function PatchBlock({
             ) : (
               <>
                 {density.totalPlants}{" "}
-                {density.totalPlants === 1 ? "pianta" : "piante"} (densità) ·{" "}
+                {density.totalPlants === 1 ? "pianta " : "piante "}
                 {Math.round(density.displayFootprint.widthCm)}×
                 {Math.round(density.displayFootprint.heightCm)} cm
               </>
@@ -258,59 +271,40 @@ export function PatchBlock({
         </TooltipContent>
       </Tooltip>
 
-      {isMulti ? (
-        <span className="absolute bottom-0.5 right-1 text-[8px] font-mono tabular-nums text-muted-foreground/80 pointer-events-none">
+      {isMulti && showPlantText ? (
+        <span className="absolute bottom-0.5 left-1 text-[8px] font-mono tabular-nums text-muted-foreground/80 pointer-events-none">
           {Math.round(density.displayFootprint.widthCm)}×
           {Math.round(density.displayFootprint.heightCm)}cm
         </span>
       ) : null}
 
-      {/* Drag handle - only this small grip area initiates a move so that
-          clicking the body still selects the patch (and the X removes it). */}
-      <button
-        type="button"
-        {...listeners}
-        {...attributes}
-        onClick={(e) => e.stopPropagation()}
-        className={cn(
-          "absolute top-0.5 left-0.5 size-4 rounded bg-card/80 border border-border/60 text-muted-foreground",
-          "hover:text-foreground hover:border-border opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
-          "grid place-items-center cursor-grab active:cursor-grabbing",
-          isDragging && "opacity-100",
-          isSelected && "opacity-100",
-        )}
-        aria-label="Trascina patch"
-      >
-        <GripVertical className="size-2.5" />
-      </button>
-
-      <button
-        type="button"
+      <CanvasResizeHandle
+        visible={showPatchControls}
+        active={isResizing}
         onPointerDown={onResizePointerDown}
-        onClick={(e) => e.stopPropagation()}
-        className={cn(
-          "absolute bottom-0 right-0 z-10 size-3 translate-x-1/2 translate-y-1/2",
-          "rounded-sm bg-card/90 cursor-se-resize nodrag nopan shadow-sm",
-          "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
-          isSelected && "opacity-100",
-          isResizing && "opacity-100",
-        )}
         aria-label="Ridimensiona patch"
       />
 
-      <button
-        type="button"
-        onClick={handleRemove}
-        className={cn(
-          "absolute top-0.5 right-0.5 size-4 rounded-full bg-card border border-border text-muted-foreground",
-          "hover:text-destructive hover:border-destructive opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity",
-          "grid place-items-center",
-          isSelected && "opacity-100"
-        )}
-        aria-label="Rimuovi pianta"
-      >
-        <X className="size-2.5" />
-      </button>
+      {!compactPatch ? (
+        <button
+          type="button"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={handleRemove}
+          className={cn(
+            "absolute top-0 right-0 z-20 flex size-7 touch-none touch-manipulation",
+            "items-start justify-end p-px",
+            "transition-opacity",
+            showPatchControls
+              ? "opacity-100"
+              : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100",
+          )}
+          aria-label="Rimuovi pianta"
+        >
+          <span className="grid size-5 place-items-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:text-destructive hover:border-destructive">
+            <X className="size-3" />
+          </span>
+        </button>
+      ) : null}
     </div>
   );
 }

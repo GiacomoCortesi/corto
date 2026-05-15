@@ -32,7 +32,7 @@ export {
 export const DEFAULT_SPACING_MODE: SpacingMode = "center-to-center";
 export const DEFAULT_ARRANGEMENT: PatchArrangement = "square";
 
-/** Max bed side: 15 m (1500 cm) per side. */
+/** Max bed side: 30 m (3000 cm) per side. */
 export { MAX_BED_SIDE_CM } from "@/lib/utils/geometry";
 
 /** Pixels per centimeter when rendering the canvas (fixed ratio). */
@@ -175,7 +175,9 @@ export function patchDensitySummaryForUI(
   plant: Plant,
 ): {
   totalPlants: number;
+  calculatedPlants: number;
   showTotalLessThanOne: boolean;
+  hasPlantCountOverride: boolean;
   displayFootprint: { widthCm: number; heightCm: number };
 } {
   void bed;
@@ -190,14 +192,21 @@ export function patchDensitySummaryForUI(
   const plantAreaCm2 = Math.max(MIN_AREA_CM2, spacing * spacing);
   const totalF = (patchAreaCm2 / plantAreaCm2) * densityFactor;
   const showTotalLessThanOne = totalF < 1;
-  const totalPlants = showTotalLessThanOne
+  const calculatedPlants = showTotalLessThanOne
     ? 0
     : Math.max(1, Math.round(totalF));
+
+  const hasPlantCountOverride = patch.plantCount !== undefined;
+  const totalPlants = hasPlantCountOverride
+    ? Math.max(1, Math.round(patch.plantCount!))
+    : calculatedPlants;
 
   const { displayFootprint } = patchDensityLayout(patch);
   return {
     totalPlants,
-    showTotalLessThanOne,
+    calculatedPlants,
+    showTotalLessThanOne: hasPlantCountOverride ? false : showTotalLessThanOne,
+    hasPlantCountOverride,
     displayFootprint,
   };
 }

@@ -11,6 +11,7 @@ import { getMoonPhaseForDate } from "@/lib/lunar/phase";
 import { wmoDayVisual } from "@/lib/weather/wmo-labels";
 import { useMonthWeather } from "@/hooks/useMonthWeather";
 import { SeasonCalendarGrid } from "@/components/sidebar/SeasonCalendarGrid";
+import { WeatherDayTooltip } from "@/components/sidebar/WeatherDayTooltip";
 import { MoonPhaseIcon } from "@/components/icons/MoonPhaseIcon";
 import { Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -57,22 +58,32 @@ export function SeasonFilter() {
             {todayHeading}
           </span>
           <div className="flex shrink-0 items-center gap-1.5">
-            {wmo && wmo.emoji !== "·" ? (
-              <span
-                className="text-base leading-none"
-                title={wmo.label}
-                aria-label={wmo.label}
-              >
-                {wmo.emoji}
-              </span>
-            ) : (
-              <span
-                className="text-[10px] font-mono text-muted-foreground"
-                title={location ? "Meteo non disponibile" : "Imposta posizione per il meteo"}
-              >
-                ·
-              </span>
-            )}
+            <WeatherDayTooltip
+              weather={todayWeather}
+              location={location}
+              fallback={
+                location ? "Meteo non disponibile" : "Imposta posizione per il meteo"
+              }
+              side="left"
+            >
+              {wmo && wmo.emoji !== "·" ? (
+                <span
+                  className="text-base leading-none cursor-default"
+                  aria-label={wmo.label}
+                >
+                  {wmo.emoji}
+                </span>
+              ) : (
+                <span
+                  className="text-[10px] font-mono text-muted-foreground cursor-default"
+                  aria-label={
+                    location ? "Meteo non disponibile" : "Imposta posizione per il meteo"
+                  }
+                >
+                  ·
+                </span>
+              )}
+            </WeatherDayTooltip>
             <span title={moon.labelIt} aria-label={moon.labelIt}>
               <MoonPhaseIcon angleRadians={moon.angleRadians} size={18} />
             </span>
