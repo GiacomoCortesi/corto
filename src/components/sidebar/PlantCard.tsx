@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { perSquareMeterLabelForPlant } from "@/lib/utils/spacing";
 import { formatMonthRanges } from "@/lib/data/plants";
 import type { Plant } from "@/lib/types";
-import { Sun, CloudSun, CloudMoon, Droplet, Droplets, Plus, Check } from "lucide-react";
+import { Sun, CloudSun, CloudMoon, Droplet, Droplets, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -187,27 +187,8 @@ export function PlantCard({
             {plant.category}
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {!selectable ? (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                quickAdd();
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              className={cn(
-                "size-8 rounded-lg border border-border bg-muted/50 text-muted-foreground grid place-items-center transition-colors hover:bg-primary hover:text-primary-foreground hover:border-primary",
-                draggable && "sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100",
-              )}
-              aria-label={`Aggiungi ${plant.name} all'aiuola`}
-            >
-              <Plus className="size-3.5" />
-            </button>
-          ) : null}
-          <div className="flex items-center gap-1 text-muted-foreground">
-            <Tooltip>
+        <div className="flex items-center gap-1 shrink-0 text-muted-foreground">
+          <Tooltip>
             <TooltipTrigger asChild>
               <span aria-label={`Sole: ${plant.sun}`}>
                 <SunIcon className="size-3.5" />
@@ -238,7 +219,6 @@ export function PlantCard({
             </TooltipTrigger>
             <TooltipContent side="left">{WATER_LABEL[plant.water]}</TooltipContent>
           </Tooltip>
-          </div>
         </div>
       </div>
       <div className="mt-2 flex items-center justify-between text-[10px] font-mono text-muted-foreground">

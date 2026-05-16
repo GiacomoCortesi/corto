@@ -32,70 +32,76 @@ type Step = {
 const STEPS: Step[] = [
   {
     id: "step-1",
-    eyebrow: "Step 1",
-    title: "Aiuole componibili, come il tuo spazio",
+    eyebrow: "Le aiuole",
+    title: "Disegna lo spazio che hai davvero",
     body: (
       <>
-        Crea <strong>aiuole modulari</strong> e adattale alle misure reali. Se hai più appezzamenti,
-        organizzali in aiuole separate e ottieni una <em>visione completa</em> di tutto l’orto.
+        Terrazzo, orto di casa o piccolo appezzamento: crei <strong>aiuole alle misure giuste</strong>{" "}
+        e vedi tutto l’orto in <em>un’unica mappa</em>, senza fogli sparsi.
       </>
     ),
     icon: <Grid3X3 className="size-4" />,
   },
   {
     id: "step-2",
-    eyebrow: "Step 2",
-    title: "Trascina dal catalogo alla griglia",
+    eyebrow: "Le colture",
+    title: "Dal catalogo alla griglia, con un gesto",
     body: (
       <>
-        Scegli dal <strong>catalogo</strong> e posiziona le piante direttamente nelle celle. Poi
-        riorganizza tutto <em>trascinando gli elementi</em>: perfetto per modifiche e pianificazione.
+        Scegli le piante e le <strong>trascini in posto</strong>. Se cambi idea, le sposti: niente
+        disegno da rifare, come quando sistemi le file in campagna.
       </>
     ),
     icon: <Leaf className="size-4" />,
   },
   {
     id: "step-3",
-    eyebrow: "Step 3",
-    title: (
-      <>
-        Info mirate + modalità <em>Vicino</em>
-      </>
-    ),
+    eyebrow: "Vicinato",
+    title: "Buoni vicini, cattivi vicini",
     body: (
       <>
-        Per ogni pianta ottieni <strong>indicazioni pratiche</strong>: trattamenti, possibili malattie
-        e soluzioni. Con <em>“Vicino”</em> vedi subito gli abbinamenti corretti e quelli che possono
-        ostacolare la crescita.
+        Vedi subito chi va d’accordo e chi no. Meno errori tra le file, meno malattie — la{" "}
+        <strong>saggezza degli orti locali</strong>, sempre sotto mano con <em>Vicino</em>.
       </>
     ),
     icon: <Sparkles className="size-4" />,
   },
   {
     id: "step-4",
-    eyebrow: "Step 4",
-    title: "Stagioni: tutto parla la stessa lingua",
+    eyebrow: "Stagioni",
+    title: "Cosa fare oggi, non un giorno a caso",
     body: (
       <>
-        Seleziona una data e leggi l’orto <strong>a colpo d’occhio</strong>: semina, trapianto e
-        raccolta diventano immediati. Anche il catalogo si filtra automaticamente, mostrando solo
-        ciò che ha senso <em>ora</em>.
+        Imposti la data e capisci <strong>a colpo d’occhio</strong> semina, trapianto e raccolto. Il
+        catalogo ti propone solo ciò che ha senso <em>in quel periodo</em>, come in un calendario
+        dell’orto bio.
       </>
     ),
     icon: <CalendarDays className="size-4" />,
   },
   {
     id: "step-5",
-    eyebrow: "Step 5",
-    title: "AI per pianificare le prossime attività",
+    eyebrow: "Suggerimenti",
+    title: "Un promemoria che conosce il tuo orto",
     body: (
       <>
-        <strong>Suggerimenti intelligenti</strong> basati sul tuo storico: cosa fare, quando farlo e
-        perché. Con supporto alla <em>rotazione delle colture</em> per mantenere l’orto sano e
-        produttivo.
+        Consigli leggeri su <strong>cosa fare dopo</strong>, con meteo e storico delle tue colture.
+        Per <em>ruotare le colture</em> e curare il suolo, stagione dopo stagione.
       </>
     ),
     icon: <BrainCircuit className="size-4" />,
+  },
+  {
+    id: "step-6",
+    eyebrow: "Inizia",
+    title: "Pronto a seminare?",
+    body: (
+      <>
+        In due minuti hai la mappa del tuo orto bio. Poi aggiungi le piante, controlli{" "}
+        <strong>vicinati e stagioni</strong> — e vai in campo con più tranquillità.
+      </>
+    ),
+    icon: <ArrowRight className="size-4" />,
   },
 ];
 
@@ -163,24 +169,22 @@ export function LandingScrollDemo() {
       <header className="h-14 shrink-0 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/65 px-4 flex items-center gap-3 sticky top-0 z-40">
         <div className="w-full flex items-center gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="size-9 rounded-xl brand-gradient ring-1 ring-primary/15 grid place-items-center shrink-0">
+            <Link
+              href="/"
+              aria-label="Home"
+              className="size-9 shrink-0 rounded-xl overflow-hidden ring-1 ring-primary/15 cursor-pointer hover:ring-primary/30 transition-[box-shadow,ring-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
               <Image
                 src="/logo.png"
                 alt="Corto"
-                width={28}
-                height={28}
+                width={36}
+                height={36}
                 priority
-                className="size-7 object-contain"
+                unoptimized
+                className="size-9 object-cover"
               />
-            </div>
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] font-mono uppercase tracking-[0.22em] text-primary/80 leading-none">
-                Corto
-              </span>
-              <span className="text-sm font-semibold tracking-tight leading-tight text-foreground/95">
-                Home
-              </span>
-            </div>
+            </Link>
+            <span className="text-sm font-semibold tracking-tight">Corto</span>
           </div>
 
           <div className="flex-1" />
@@ -189,7 +193,7 @@ export function LandingScrollDemo() {
             <SatispayDonateDialog />
 
             <Link href="/app" className={buttonVariants({ variant: "default" })}>
-              Apri il planner <ArrowRight className="ml-1.5 size-4" />
+              Entra nell&apos;orto <ArrowRight className="ml-1.5 size-4" />
             </Link>
           </div>
         </div>
@@ -202,11 +206,12 @@ export function LandingScrollDemo() {
             <div className="grid w-full lg:grid-cols-12 lg:items-center lg:gap-10">
             <div className="lg:col-span-6">
               <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                Pianifica l’orto. <span className="text-primary">Senza fogli, senza caos.</span>
+                Il tuo orto,{" "}
+                <span className="text-primary">gestito in maniera semplice</span>
               </h1>
               <p className="mt-4 text-base sm:text-lg text-muted-foreground max-w-xl">
-                Aiuole a griglia, drag &amp; drop, compagne/antagoniste, stagioni, statistiche e
-                suggerimenti. Tutto in un canvas semplice e veloce.
+                Corto ti aiuta a pianificare e gestire il tuo orto in maniera pratica ed efficace. <br />
+                Ricrealo in pochi click e ottieni suggerimenti sulle attività, informazioni meteo, e consigli personalizzati.
               </p>
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <Link
@@ -217,7 +222,7 @@ export function LandingScrollDemo() {
                       "h-12 rounded-xl px-8 text-base sm:h-14 sm:px-10 sm:text-lg [&_svg]:size-5",
                   })}
                 >
-                  INIZIA ORA <ArrowRight className="ml-2 size-5" />
+                  Inizia l&apos;orto <ArrowRight className="ml-2 size-5" />
                 </Link>
               </div>
             </div>
@@ -258,6 +263,20 @@ export function LandingScrollDemo() {
                   <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
                     {s.body}
                   </p>
+                  {i === STEPS.length - 1 ? (
+                    <div className="mt-5">
+                      <Link
+                        href="/app"
+                        className={buttonVariants({
+                          size: "lg",
+                          className:
+                            "h-12 w-full rounded-xl text-base sm:h-14 sm:text-lg [&_svg]:size-5",
+                        })}
+                      >
+                        Inizia l&apos;orto <ArrowRight className="ml-2 size-5" />
+                      </Link>
+                    </div>
+                  ) : null}
                 </Card>
 
                 <Card className="relative border-primary/10 bg-[var(--canvas-bg)]">
@@ -273,7 +292,7 @@ export function LandingScrollDemo() {
           {/* Desktop/tablet: sticky timeline */}
           <div className="hidden lg:block">
             {/* long scroll duration that drives the timeline */}
-            <div className="h-[520vh]">
+            <div style={{ height: `${(STEPS.length - 1) * 130}vh` }}>
               <div className="sticky top-14">
                 <div className="flex min-h-[calc(100dvh-3.5rem)] items-center">
                   <div className="grid lg:grid-cols-12 gap-10 items-start w-full">
@@ -310,11 +329,25 @@ export function LandingScrollDemo() {
                           <p className="mt-3 text-sm sm:text-[15px] text-muted-foreground leading-relaxed">
                             {s.body}
                           </p>
+                          {i === STEPS.length - 1 ? (
+                            <div className="mt-5">
+                              <Link
+                                href="/app"
+                                className={buttonVariants({
+                                  size: "lg",
+                                  className:
+                                    "h-12 w-full rounded-xl text-base sm:h-14 sm:text-lg [&_svg]:size-5",
+                                })}
+                              >
+                                Inizia l&apos;orto <ArrowRight className="ml-2 size-5" />
+                              </Link>
+                            </div>
+                          ) : null}
 
                         </Card>
                       ))}
                       {/* reserve height for the absolutely-positioned cards */}
-                      <div className="h-[340px] sm:h-[280px]" aria-hidden />
+                      <div className="h-[400px] sm:h-[340px]" aria-hidden />
                     </div>
                     </div>
 
@@ -339,7 +372,7 @@ export function LandingScrollDemo() {
                                     : "bg-card border-border/70 opacity-70 hover:opacity-100"
                                 )}
                                 onClick={() => smoothToStep(i)}
-                                aria-label={`Vai a ${s.eyebrow}`}
+                                aria-label={`Vai a: ${s.eyebrow}`}
                               />
                             ))}
                           </div>
@@ -355,32 +388,6 @@ export function LandingScrollDemo() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-6 py-16">
-          <Card className="border-primary/15 bg-card/60">
-            <div className="px-6 py-10 sm:px-10 sm:py-12 text-center">
-              <div className="text-[10px] font-mono uppercase tracking-[0.22em] text-muted-foreground">
-                Pronto?
-              </div>
-              <p className="mt-3 text-sm sm:text-[15px] text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                Crea le aiuole, trascina le piante e ottieni suggerimenti: in pochi minuti hai una
-                vista completa del tuo orto.
-              </p>
-              <div className="mt-6 flex justify-center">
-                <Link
-                  href="/app"
-                  className={buttonVariants({
-                    size: "lg",
-                    variant: "default",
-                    className:
-                      "h-12 rounded-xl px-8 text-base sm:h-14 sm:px-10 sm:text-lg [&_svg]:size-5",
-                  })}
-                >
-                  INIZIA ORA <ArrowRight className="ml-2 size-5" />
-                </Link>
-              </div>
-            </div>
-          </Card>
-        </section>
       </main>
     </div>
   );

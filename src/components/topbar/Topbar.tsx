@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
@@ -36,7 +35,6 @@ import {
   Undo2,
 } from "lucide-react";
 import { useGardenStore } from "@/lib/store";
-import { ThemeToggle } from "@/components/topbar/ThemeToggle";
 import { toast } from "sonner";
 import { exportElementToPng, safeFilename } from "@/lib/utils/export";
 import { exportProjectJson, importProjectJsonText } from "@/lib/utils/project-io";
@@ -57,22 +55,13 @@ type Props = {
 export function Topbar({ canvasRef, onReset }: Props) {
   const meta = useGardenStore((s) => s.meta);
   const beds = useGardenStore((s) => s.beds);
-  const renameGarden = useGardenStore((s) => s.renameGarden);
   const undo = useGardenStore((s) => s.undo);
   const redo = useGardenStore((s) => s.redo);
   const past = useGardenStore((s) => s.past.length);
   const future = useGardenStore((s) => s.future.length);
 
-  const [name, setName] = React.useState(meta.name);
   const [addPlantOpen, setAddPlantOpen] = React.useState(false);
-  React.useEffect(() => setName(meta.name), [meta.name]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-
-  const commitName = () => {
-    const next = name.trim() || "Il mio orto";
-    if (next !== meta.name) renameGarden(next);
-    setName(next);
-  };
 
   const onExport = async () => {
     const el = canvasRef.current;
@@ -131,32 +120,19 @@ export function Topbar({ canvasRef, onReset }: Props) {
         <Link
           href="/"
           aria-label="Home"
-          className="size-9 rounded-xl brand-gradient ring-1 ring-primary/15 grid place-items-center shrink-0 cursor-pointer hover:ring-primary/30 transition-[box-shadow,ring-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="size-9 shrink-0 rounded-xl overflow-hidden ring-1 ring-primary/15 cursor-pointer hover:ring-primary/30 transition-[box-shadow,ring-color] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           <Image
             src="/logo.png"
             alt="Corto"
-            width={28}
-            height={28}
+            width={36}
+            height={36}
             priority
-            className="size-7 object-contain"
+            unoptimized
+            className="size-9 object-cover"
           />
         </Link>
-        <div className="flex flex-col min-w-0">
-          <span className="text-[10px] font-mono uppercase tracking-[0.22em] text-primary/80 leading-none">
-            Corto
-          </span>
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={commitName}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-            }}
-            className="h-7 -ml-2 px-2 border-transparent bg-transparent text-sm font-semibold tracking-tight shadow-none hover:bg-muted/60 focus-visible:bg-card focus-visible:border-input"
-            aria-label="Nome dell'orto"
-          />
-        </div>
+        <span className="text-sm font-semibold tracking-tight">Corto</span>
       </div>
 
       <div className="flex-1" />
@@ -167,7 +143,7 @@ export function Topbar({ canvasRef, onReset }: Props) {
           size="icon"
           aria-label="Aggiungi frutta e verdura all'aiuola"
           title="Aggiungi all'aiuola"
-          className="relative md:h-9 md:w-auto md:px-3 md:gap-2"
+          className="relative md:h-10 md:w-auto md:px-3 md:gap-2"
           onClick={() => setAddPlantOpen(true)}
         >
           <FruitPlusIcon />
@@ -295,10 +271,6 @@ export function Topbar({ canvasRef, onReset }: Props) {
           </TooltipTrigger>
           <TooltipContent>GitHub</TooltipContent>
         </Tooltip>
-
-        <div className="hidden md:block">
-          <ThemeToggle />
-        </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

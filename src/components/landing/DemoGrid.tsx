@@ -93,43 +93,46 @@ function buildState(step: number) {
   return { cols, rows, bed, grid };
 }
 
+const DEMO_COLS = 8;
+const DEMO_ROWS = 5;
+
+const demoVarsStyle = {
+  ["--demo-cell" as never]: "clamp(28px, 5.2vw, 56px)",
+  ["--demo-gap" as never]: "0.5rem",
+} as React.CSSProperties;
+
+const demoFrameStyle: React.CSSProperties = {
+  width: `calc(${DEMO_COLS} * var(--demo-cell) + ${DEMO_COLS - 1} * var(--demo-gap))`,
+  height: `calc(${DEMO_ROWS} * var(--demo-cell) + ${DEMO_ROWS - 1} * var(--demo-gap))`,
+};
+
 export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
   const states = React.useMemo(
     () => [0, 1, 2, 3, 4].map((s) => buildState(s)),
     []
   );
 
+
   if (step === 0) {
     return (
-      <div
-        className="relative mx-auto w-fit"
-        style={
-          {
-            // Match the grid width exactly (8 cols + 7 gaps)
-            ["--demo-cell" as never]: "clamp(28px, 5.2vw, 56px)",
-            ["--demo-gap" as never]: "0.5rem",
-            width: "calc(8 * var(--demo-cell) + 7 * var(--demo-gap))",
-            maxWidth: "92vw",
-          } as React.CSSProperties
-        }
-      >
+      <div className="relative mx-auto w-fit" style={demoVarsStyle}>
         <div
-          className="relative overflow-hidden rounded-2xl bg-card/20"
-          style={
-            {
-              width: "calc(8 * var(--demo-cell) + 7 * var(--demo-gap))",
-              height: "calc(5 * var(--demo-cell) + 4 * var(--demo-gap))",
-              maxWidth: "92vw",
-            } as React.CSSProperties
-          }
+          className={cn(
+            "relative overflow-hidden rounded-2xl ring-1 ring-primary/15 shadow-sm",
+            "bg-[var(--canvas-bg)]",
+            "[background-image:radial-gradient(ellipse_3px_5px_at_30%_40%,color-mix(in_oklab,var(--sage)_18%,transparent)_0_45%,transparent_55%),radial-gradient(ellipse_2px_4px_at_70%_65%,color-mix(in_oklab,var(--sage)_12%,transparent)_0_40%,transparent_50%)]",
+            "[background-size:18px_22px,24px_28px]",
+          )}
+          style={demoFrameStyle}
         >
           <Image
             src="/landing/step1-beds.png"
             alt="Esempio aiuole e griglia"
             fill
             sizes="(min-width: 1024px) 520px, 92vw"
-            className="object-cover"
-            priority={false}
+            unoptimized
+            className="object-contain"
+            priority
           />
         </div>
       </div>
@@ -144,17 +147,7 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
   const flyT = showFly ? Math.min(1, Math.max(0, t)) : 0;
 
   return (
-    <div
-      className="relative mx-auto w-fit"
-      style={
-        {
-          // Bigger, “hero” cells on desktop, still responsive on mobile.
-          // Keep as CSS var so we can use it for width/height too.
-          ["--demo-cell" as never]: "clamp(28px, 5.2vw, 56px)",
-          ["--demo-gap" as never]: "0.5rem",
-        } as React.CSSProperties
-      }
-    >
+    <div className="relative mx-auto w-fit" style={demoVarsStyle}>
       <div
         className="grid"
         style={{
@@ -185,7 +178,7 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                 cell.season === "sowing+transplanting" &&
                   "bg-gradient-to-br from-[var(--sage)]/14 to-[var(--ochre)]/14 border-primary/25",
                 cell.ring === "good" && "ring-2 ring-[var(--sage)]/45 bg-[var(--sage-soft)]/55",
-                cell.ring === "bad" && "ring-2 ring-[var(--terracotta)]/55 bg-[var(--terracotta-soft)]/55",
+                cell.ring === "bad" && "ring-2 ring-[var(--conflict)]/55 bg-[var(--conflict-soft)]/55",
                 cell.ghost && "ring-2 ring-primary/35 bg-[color-mix(in_oklab,var(--primary)_10%,var(--card))]"
               )}
               style={{
@@ -244,7 +237,7 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
               Vicinato
             </div>
             <div className="mt-1 text-base font-semibold tracking-tight">
-              Aiuola dietro casa
+              Orto di casa
             </div>
 
             <div className="mt-3 grid grid-cols-2 gap-2">
@@ -259,9 +252,9 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                   1
                 </div>
               </div>
-              <div className="rounded-2xl border border-[var(--terracotta)]/30 bg-[var(--terracotta-soft)]/55 px-3 py-3">
-                <div className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-[color-mix(in_oklab,var(--terracotta)_72%,black)]">
-                  <span className="grid size-5 place-items-center rounded-full bg-card/70 ring-1 ring-[var(--terracotta)]/20">
+              <div className="rounded-2xl border border-[var(--conflict)]/30 bg-[var(--conflict-soft)]/55 px-3 py-3">
+                <div className="flex items-center gap-2 text-[11px] font-semibold tracking-wide text-[color-mix(in_oklab,var(--conflict)_72%,black)]">
+                  <span className="grid size-5 place-items-center rounded-full bg-card/70 ring-1 ring-[var(--conflict)]/20">
                     !
                   </span>
                   CONFLITTI
@@ -288,8 +281,8 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                   </div>
                 </div>
                 <div className="mt-2 text-[12px] leading-snug text-muted-foreground">
-                  Aromi e allestimento aiutano a ridurre stress e parassiti: buona
-                  combinazione in aiuola.
+                  Basilico e pomodoro si trovano bene: profumi che tengono lontani parassiti,
+                  come in tanti orti bio di zona.
                 </div>
               </div>
 
@@ -299,7 +292,7 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                     <span className="text-lg">🥒</span>
                     <span className="font-medium truncate">Cetriolo</span>
                   </div>
-                  <span className="rounded-full border border-[var(--terracotta)]/35 bg-[var(--terracotta-soft)]/60 px-2 py-0.5 text-[11px] font-semibold text-[color-mix(in_oklab,var(--terracotta)_72%,black)]">
+                  <span className="rounded-full border border-[var(--conflict)]/35 bg-[var(--conflict-soft)]/60 px-2 py-0.5 text-[11px] font-semibold text-[color-mix(in_oklab,var(--conflict)_72%,black)]">
                     evitare
                   </span>
                   <div className="flex items-center gap-2 min-w-0">
@@ -308,8 +301,8 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                   </div>
                 </div>
                 <div className="mt-2 text-[12px] leading-snug text-muted-foreground">
-                  Nella stessa aiuola stretta aumenta il rischio di malattie
-                  fogliari comuni.
+                  Cetriolo e zucchina troppo vicini stressano le piante: meglio separarli,
+                  soprattutto in un orto bio.
                 </div>
               </div>
             </div>
@@ -383,11 +376,11 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-sm font-semibold tracking-tight">
-                  Chiedi suggerimenti
+                  Suggerimenti per te
                 </div>
                 <div className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
-                  Un assistente ragiona per attività: cosa fare, quando farlo e perché
-                  (cadenze, diario, meteo).
+                  Cosa fare nei prossimi giorni, con meteo e diario del tuo orto —
+                  senza perdere il ritmo di stagione.
                 </div>
               </div>
             </div>
@@ -416,7 +409,7 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="text-lg">💧</span>
                   <span className="font-semibold truncate">
-                    Annaffiatura: valutazione per aiuole
+                    Annaffiatura: controlla le aiuole
                   </span>
                 </div>
                 <span className="shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
@@ -427,6 +420,15 @@ export function DemoGrid({ step, stepT }: { step: number; stepT?: number }) {
                 tra 2 gg (±2gg) • 16 da fare / 19 valutate
               </div>
             </div>
+          </div>
+        </div>
+      ) : null}
+
+      {step === 5 ? (
+        <div className="pointer-events-none absolute inset-0 grid place-items-center">
+          <div className="rounded-2xl border border-primary/25 bg-card/90 px-6 py-5 text-center shadow-lg ring-1 ring-primary/15 backdrop-blur fade-in-up">
+            <div className="text-3xl">🌱</div>
+            <div className="mt-2 text-sm font-semibold tracking-tight">Il tuo orto ti aspetta</div>
           </div>
         </div>
       ) : null}

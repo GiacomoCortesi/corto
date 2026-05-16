@@ -27,6 +27,11 @@ import {
 import { patchSizeFromResizeDelta } from "@/lib/utils/geometry";
 import { toast } from "sonner";
 import { CanvasResizeHandle } from "@/components/canvas/CanvasResizeHandle";
+import { usePrefersHover } from "@/hooks/usePrefersHover";
+import type { Plant } from "@/lib/types";
+
+const TOUCH_TAP_MAX_MS = 280;
+const TOUCH_TAP_MAX_PX = 10;
 
 type Props = {
   bedId: string;
@@ -38,6 +43,9 @@ type Props = {
   seasonMonth: number;
   /** Cell background: color based on sowing/harvest for that month. */
   seasonMode: PlantSeasonMode;
+  /** Controlled info tooltip (touch); one open patch per bed. */
+  infoOpen?: boolean;
+  onInfoOpenChange?: (open: boolean) => void;
 };
 
 function seasonModeHint(mode: PlantSeasonMode, month: number): string {
@@ -62,6 +70,51 @@ function seasonModeHint(mode: PlantSeasonMode, month: number): string {
   }
 }
 
+function PatchInfoTooltipContent({
+  plant,
+  density,
+  spacing,
+  arrangement,
+  seasonMode,
+  seasonMonth,
+}: {
+  plant: Plant;
+  density: ReturnType<typeof patchDensitySummaryForUI>;
+  spacing: number;
+  arrangement: ReturnType<typeof patchEffectiveArrangement>;
+  seasonMode: PlantSeasonMode;
+  seasonMonth: number;
+}) {
+  return (
+    <>
+      <div className="font-medium">{plant.name}</div>
+      <div className="text-[10px] opacity-70">{plant.scientific ?? "—"}</div>
+      <div className="mt-1 text-[10px] font-mono tabular-nums leading-snug">
+        {density.showTotalLessThanOne ? (
+          <>
+            &lt;1 pianta (densità) ·{" "}
+            {Math.round(density.displayFootprint.widthCm)}×
+            {Math.round(density.displayFootprint.heightCm)} cm
+          </>
+        ) : (
+          <>
+            {density.totalPlants}{" "}
+            {density.totalPlants === 1 ? "pianta " : "piante "}
+            {Math.round(density.displayFootprint.widthCm)}×
+            {Math.round(density.displayFootprint.heightCm)} cm
+          </>
+        )}
+      </div>
+      <div className="text-[10px] font-mono tabular-nums text-muted-foreground leading-snug">
+        {spacing} cm · {arrangementLabel(arrangement)}
+      </div>
+      <div className="mt-1.5 border-t border-background/25 pt-1.5 text-[10px] leading-snug opacity-95">
+        {seasonModeHint(seasonMode, seasonMonth)}
+      </div>
+    </>
+  );
+}
+
 export function PatchBlock({
   bedId,
   bed,
@@ -70,7 +123,10 @@ export function PatchBlock({
   outOfSeason = false,
   seasonMonth,
   seasonMode,
+  infoOpen = false,
+  onInfoOpenChange,
 }: Props) {
+  const prefersHover = usePrefersHover();
   const setSelection = useGardenStore((s) => s.setSelection);
   const removePatch = useGardenStore((s) => s.removePatch);
   const resizePatchCm = useGardenStore((s) => s.resizePatchCm);
@@ -97,6 +153,61 @@ export function PatchBlock({
     active?.id && String(active.id).startsWith("plant:"),
   );
 
+  const touchTapRef = React.useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    startTime: number;
+  } | null>(null);
+
+  const shouldIgnoreTouchTarget = (target: EventTarget | null) => {
+    if (!(target instanceof Element)) return false;
+    return Boolean(
+      target.closest("[data-patch-resize-handle]") ||
+        target.closest('button[aria-label="Rimuovi pianta"]'),
+    );
+  };
+
+  React.useEffect(() => {
+    if (!prefersHover && (isDragging || isResizing) && infoOpen) {
+      onInfoOpenChange?.(false);
+    }
+  }, [prefersHover, isDragging, isResizing, infoOpen, onInfoOpenChange]);
+
+  const handleTouchPointerDown = (e: React.PointerEvent) => {
+    if (prefersHover || e.pointerType !== "touch") return;
+    if (shouldIgnoreTouchTarget(e.target)) return;
+    touchTapRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      startTime: Date.now(),
+    };
+  };
+
+  const handleTouchPointerUp = (e: React.PointerEvent) => {
+    if (prefersHover || e.pointerType !== "touch") return;
+    if (shouldIgnoreTouchTarget(e.target)) return;
+    const tap = touchTapRef.current;
+    touchTapRef.current = null;
+    if (!tap || tap.pointerId !== e.pointerId || isDragging) return;
+
+    const dt = Date.now() - tap.startTime;
+    const dist = Math.hypot(e.clientX - tap.startX, e.clientY - tap.startY);
+    if (dt > TOUCH_TAP_MAX_MS || dist > TOUCH_TAP_MAX_PX) return;
+
+    e.stopPropagation();
+    setSelection({ kind: "plant", bedId, patchId: patch.id });
+    onInfoOpenChange?.(!infoOpen);
+  };
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isDragging) return;
+    e.stopPropagation();
+    if (!prefersHover) return;
+    setSelection({ kind: "plant", bedId, patchId: patch.id });
+  };
+
   const plant = plantById(patch.plantId);
   if (!plant) return null;
 
@@ -120,12 +231,6 @@ export function PatchBlock({
   const showPlantText = !compactPatch;
   const showPatchControls =
     isSelected || isResizing || isDragging || compactPatch;
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isDragging) return;
-    e.stopPropagation();
-    setSelection({ kind: "plant", bedId, patchId: patch.id });
-  };
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -179,11 +284,18 @@ export function PatchBlock({
 
   const isMulti = count > 1;
 
+  const dndPointerDown = listeners?.onPointerDown;
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
+      onPointerDown={(e) => {
+        handleTouchPointerDown(e);
+        dndPointerDown?.(e);
+      }}
+      onPointerUp={handleTouchPointerUp}
       onClick={handleClick}
       className={cn(
         "group relative rounded-md border-0 transition-[opacity,box-shadow] duration-150",
@@ -202,7 +314,7 @@ export function PatchBlock({
         seasonMode === "all" &&
           "bg-gradient-to-br from-[var(--sage-soft)] via-[var(--ochre-soft)] to-[var(--terracotta-soft)]",
         relation === "good" && "ring-2 ring-[var(--sage)]/60",
-        relation === "bad" && "ring-2 ring-[var(--terracotta)]/70",
+        relation === "bad" && "ring-2 ring-[var(--conflict)]/70",
         isSelected && "ring-2 ring-primary",
         outOfSeason && "opacity-40",
         isDragging && "opacity-30 ring-2 ring-primary",
@@ -222,7 +334,11 @@ export function PatchBlock({
         transition: "none",
       }}
     >
-      <Tooltip>
+      <Tooltip
+        {...(prefersHover
+          ? {}
+          : { open: infoOpen, onOpenChange: onInfoOpenChange })}
+      >
         <TooltipTrigger asChild>
           <div className="flex flex-col items-center justify-center gap-0.5 px-1 pointer-events-auto w-full h-full">
             <span
@@ -242,32 +358,14 @@ export function PatchBlock({
           </div>
         </TooltipTrigger>
         <TooltipContent side="top" className="text-xs">
-          <div className="font-medium">{plant.name}</div>
-          <div className="text-[10px] opacity-70">
-            {plant.scientific ?? "—"}
-          </div>
-          <div className="mt-1 text-[10px] font-mono tabular-nums leading-snug">
-            {density.showTotalLessThanOne ? (
-              <>
-                &lt;1 pianta (densità) ·{" "}
-                {Math.round(density.displayFootprint.widthCm)}×
-                {Math.round(density.displayFootprint.heightCm)} cm
-              </>
-            ) : (
-              <>
-                {density.totalPlants}{" "}
-                {density.totalPlants === 1 ? "pianta " : "piante "}
-                {Math.round(density.displayFootprint.widthCm)}×
-                {Math.round(density.displayFootprint.heightCm)} cm
-              </>
-            )}
-          </div>
-          <div className="text-[10px] font-mono tabular-nums text-muted-foreground leading-snug">
-            {spacing} cm · {arrangementLabel(arrangement)}
-          </div>
-          <div className="mt-1.5 border-t border-background/25 pt-1.5 text-[10px] leading-snug opacity-95">
-            {seasonModeHint(seasonMode, seasonMonth)}
-          </div>
+          <PatchInfoTooltipContent
+            plant={plant}
+            density={density}
+            spacing={spacing}
+            arrangement={arrangement}
+            seasonMode={seasonMode}
+            seasonMonth={seasonMonth}
+          />
         </TooltipContent>
       </Tooltip>
 

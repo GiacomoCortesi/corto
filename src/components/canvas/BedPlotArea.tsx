@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import type { Bed } from "@/lib/types";
 import { plantById, plantActiveInMonth, plantSeasonModeForMonth } from "@/lib/data/plants";
 import { BedDropZone } from "@/components/canvas/BedDropZone";
@@ -14,6 +15,7 @@ type Props = {
 };
 
 export function BedPlotArea({ bed, nodeId, seasonFilter }: Props) {
+  const [infoPatchId, setInfoPatchId] = React.useState<string | null>(null);
   const plotSize = bedPlotSizePx(bed);
   const patchRelations = patchRelationsForBed(bed);
 
@@ -22,7 +24,10 @@ export function BedPlotArea({ bed, nodeId, seasonFilter }: Props) {
       className="relative nodrag nopan bed-soil-texture"
       data-bed-plot={bed.id}
       style={{ width: plotSize.width, height: plotSize.height }}
-      onPointerDown={(e) => e.stopPropagation()}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        if (e.target === e.currentTarget) setInfoPatchId(null);
+      }}
     >
       <BedDropZone bedId={bed.id} />
 
@@ -44,6 +49,10 @@ export function BedPlotArea({ bed, nodeId, seasonFilter }: Props) {
             outOfSeason={outOfSeason}
             seasonMonth={seasonFilter}
             seasonMode={seasonMode}
+            infoOpen={infoPatchId === patch.id}
+            onInfoOpenChange={(open) =>
+              setInfoPatchId(open ? patch.id : null)
+            }
           />
         );
       })}

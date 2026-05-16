@@ -25,6 +25,7 @@ export function CanvasResizeHandle({
   return (
     <button
       type="button"
+      data-patch-resize-handle=""
       onPointerDown={onPointerDown}
       onClick={(e) => e.stopPropagation()}
       aria-label={ariaLabel}

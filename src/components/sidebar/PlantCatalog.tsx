@@ -1,6 +1,7 @@
 "use client";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { GardenNameInput } from "@/components/sidebar/GardenNameInput";
 import { SeasonFilter } from "@/components/sidebar/SeasonFilter";
 import { TipOfTheDayCard } from "@/components/sidebar/TipOfTheDay";
 
@@ -23,6 +24,10 @@ export function PlantCatalogContent({
         <div className="text-[10px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
           Orto
         </div>
+        <GardenNameInput />
+      </div>
+
+      <div>
         <h2 className="text-sm font-semibold tracking-tight">Stagione</h2>
       </div>
 
@@ -66,7 +71,7 @@ function LegendBar() {
         <LegendItem label="Raccolto" className="bg-[var(--terracotta)]" />
         <LegendItem label="Fuori stagione" className="bg-muted-foreground/40" hint="opaco" />
         <LegendItem label="Vicini OK" className="bg-[var(--sage)]/70" hint="bordo" />
-        <LegendItem label="Conflitto" className="bg-[var(--terracotta)]/70" hint="bordo" />
+        <LegendItem label="Conflitto" className="bg-[var(--conflict)]/70" hint="bordo" />
       </div>
     </div>
   );

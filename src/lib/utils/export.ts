@@ -9,7 +9,7 @@ export async function exportElementToPng(
     pixelRatio: 2,
     backgroundColor: getComputedStyle(document.documentElement)
       .getPropertyValue("--background")
-      .trim() || "#fafaf9",
+      .trim() || "#f0e4e9",
     filter: (node) => {
       // Esclude i controlli interattivi di React Flow dall'export
       if (!(node instanceof HTMLElement)) return true;

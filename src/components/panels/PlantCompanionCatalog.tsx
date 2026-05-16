@@ -53,9 +53,9 @@ export function PlantCompanionCatalog({ plant }: Props) {
               return (
                 <li
                   key={entry.plantId}
-                  className="rounded-md border border-[var(--terracotta)]/35 bg-[var(--terracotta-soft)]/25 px-2 py-1.5"
+                  className="rounded-md border border-[var(--conflict)]/35 bg-[var(--conflict-soft)]/25 px-2 py-1.5"
                 >
-                  <div className="text-[11px] font-medium text-[var(--terracotta)]">
+                  <div className="text-[11px] font-medium text-[var(--conflict)]">
                     {emoji} {entry.name}
                   </div>
                   <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">

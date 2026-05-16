@@ -61,7 +61,7 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
         "border-border bg-card",
         "hover:shadow-md",
         selected && "ring-2 ring-primary shadow-lg",
-        conflictsCount > 0 && !selected && "ring-1 ring-[var(--terracotta)]/50",
+        conflictsCount > 0 && !selected && "ring-1 ring-[var(--conflict)]/50",
       )}
       onClick={() => setSelection({ kind: "bed", bedId: bed.id })}
       style={{ width: plotSize.width }}
@@ -140,7 +140,7 @@ export function BedNode({ data, id, selected }: NodeProps & { data: BedNodeData 
       />
 
       {conflictsCount > 0 ? (
-        <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wide text-[var(--terracotta)]">
+        <div className="px-3 pb-2 text-[10px] font-mono uppercase tracking-wide text-[var(--conflict)]">
           {conflictsCount} {conflictsCount === 1 ? "conflitto" : "conflitti"} di vicinato
         </div>
       ) : null}

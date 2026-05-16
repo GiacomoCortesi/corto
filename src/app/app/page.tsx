@@ -8,6 +8,7 @@ import {
   DragOverlay,
   DragStartEvent,
   PointerSensor,
+  TouchSensor,
   pointerWithin,
   useSensor,
   useSensors,
@@ -55,8 +56,11 @@ export default function AppPage() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
-      activationConstraint: { distance: 4 },
-    })
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 300, tolerance: 8 },
+    }),
   );
 
   const onDragStart = (e: DragStartEvent) => {

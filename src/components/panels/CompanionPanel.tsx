@@ -117,13 +117,13 @@ function StatTile({
         "rounded-xl border p-3 " +
         (isGood
           ? "border-[var(--sage)]/30 bg-[var(--sage-soft)]/40"
-          : "border-[var(--terracotta)]/30 bg-[var(--terracotta-soft)]/40")
+          : "border-[var(--conflict)]/30 bg-[var(--conflict-soft)]/40")
       }
     >
       <div
         className={
           "flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wide " +
-          (isGood ? "text-[var(--sage)]" : "text-[var(--terracotta)]")
+          (isGood ? "text-[var(--sage)]" : "text-[var(--conflict)]")
         }
       >
         {icon}
@@ -159,7 +159,7 @@ function PairRow({
         <span
           className={
             "h-px flex-1 shrink " +
-            (isGood ? "bg-[var(--sage)]" : "bg-[var(--terracotta)]")
+            (isGood ? "bg-[var(--sage)]" : "bg-[var(--conflict)]")
           }
         />
         <Badge
@@ -168,7 +168,7 @@ function PairRow({
             "font-mono text-[10px] shrink-0 " +
             (isGood
               ? "border-[var(--sage)]/40 text-[var(--sage)]"
-              : "border-[var(--terracotta)]/40 text-[var(--terracotta)]")
+              : "border-[var(--conflict)]/40 text-[var(--conflict)]")
           }
         >
           {isGood ? "ok" : "evitare"}
@@ -176,7 +176,7 @@ function PairRow({
         <span
           className={
             "h-px flex-1 shrink " +
-            (isGood ? "bg-[var(--sage)]" : "bg-[var(--terracotta)]")
+            (isGood ? "bg-[var(--sage)]" : "bg-[var(--conflict)]")
           }
         />
         <div className="flex items-center gap-1 text-sm min-w-0 justify-end">

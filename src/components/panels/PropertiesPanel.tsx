@@ -197,11 +197,11 @@ function demandBadgeClass(demand: FertilizerDemand): string {
     case "low":
       return "border-[var(--sage)]/50 text-[var(--sage)] bg-[var(--sage)]/10";
     case "medium":
-      return "border-amber-500/50 text-amber-700 bg-amber-500/10 dark:text-amber-400";
+      return "border-[var(--ochre)]/50 text-[var(--ochre)] bg-[var(--ochre)]/10";
     case "high":
       return "border-[var(--terracotta)]/60 text-[var(--terracotta)] bg-[var(--terracotta)]/10";
     case "fixer":
-      return "border-emerald-500/50 text-emerald-700 bg-emerald-500/10 dark:text-emerald-400";
+      return "border-[var(--sage)]/50 text-[var(--sage)] bg-[var(--sage)]/10";
   }
 }
 
@@ -312,7 +312,7 @@ function PlantCareInfo({ plant }: { plant: Plant }) {
             <p className="leading-snug">{fert.schedule}</p>
           </div>
           {fert.notes ? (
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/5 px-2 py-1.5 text-[11px] leading-snug text-amber-900 dark:text-amber-200">
+            <div className="rounded-md border border-[var(--ochre)]/30 bg-[var(--ochre)]/5 px-2 py-1.5 text-[11px] leading-snug text-[var(--terracotta)]">
               <span className="font-semibold">Nota: </span>
               {fert.notes}
             </div>
@@ -417,6 +417,14 @@ export function PropertiesPanel() {
 
       <Separator />
 
+      <PlantSeasonTimeline plant={plant} />
+
+      {plant.fertilizer || plant.treatments ? (
+        <PlantCareInfo plant={plant} />
+      ) : null}
+
+      <Separator />
+
       <PatchComposition
         bed={bed}
         patch={patch}
@@ -443,17 +451,6 @@ export function PropertiesPanel() {
           setPatchPlantCount(bed.id, patch.id, plantCount)
         }
       />
-
-      <Separator />
-
-      <PlantSeasonTimeline plant={plant} />
-
-      {plant.fertilizer || plant.treatments ? (
-        <>
-          <Separator />
-          <PlantCareInfo plant={plant} />
-        </>
-      ) : null}
 
       <Separator />
 

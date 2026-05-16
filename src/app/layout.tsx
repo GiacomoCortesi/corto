@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Sora } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,20 +7,22 @@ import { Toaster } from "@/components/ui/sonner";
 import { LenisProvider } from "@/components/LenisProvider";
 import { Analytics } from "@vercel/analytics/next";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Corto · Garden Planner",
+  title: "Corto · Il planner per il tuo orto biologico",
   description:
-    "Garden planner a griglia: aiuole modulari, drag & drop, companion planting, filtri stagionali, statistiche ed export PNG.",
+    "Pianifica aiuole, vicinati e stagioni dell'orto bio. Per chi coltiva con cura, senza fogli sparsi né dubbi su cosa piantare vicino a chi.",
 };
 
 export default function RootLayout({
@@ -31,15 +33,16 @@ export default function RootLayout({
   return (
     <html
       lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${sora.variable} ${fraunces.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
         <LenisProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="light"
+            forcedTheme="light"
+            enableSystem={false}
             enableColorScheme
           >
             <TooltipProvider delay={120}>
