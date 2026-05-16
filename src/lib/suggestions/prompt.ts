@@ -86,7 +86,7 @@ La luna NON sostituisce meteo, temperatura del terreno o stadio colturale.
 
 ### Mapping pratico categoria → luna
 Usa \`category\` dal contesto:
-- \`frutto\`, \`leguminosa\`, \`foglia\`, \`aromatica\` → preferisci giorni in fase **crescente** per \`sowing\` / \`transplanting\`.
+- \`frutto\`, \`leguminosa\`, \`foglia\`, \`aromatica\`, \`fiore-edule\` → preferisci giorni in fase **crescente** per \`sowing\` / \`transplanting\`.
 - \`radice\` → preferisci fase **calante** per \`sowing\`; \`weeding\` e raccolta conserva spesso in calante.
 - Per \`weeding\`, \`treatment\`, \`harvest\`: se due date sono equivalenti per eventi+meteo, sposta leggermente verso calante (sarchiatura/raccolta conserva) o crescente (raccolta foglie/frutti freschi).
 

@@ -7,7 +7,8 @@ export type PlantCategory =
   | "frutti-di-bosco"
   | "leguminosa"
   | "radice"
-  | "foglia";
+  | "foglia"
+  | "fiore-edule";
 
 /**
  * (Approximate) botanical family for crop rotation.

@@ -1,4 +1,5 @@
 import type { CropFamily, Plant, PlantFertilizer, PlantTreatment, RotationGroup } from "@/lib/types";
+import { EDIBLE_FLOWERS } from "@/lib/data/edible-flowers";
 import { tagAnti, tagComp } from "@/lib/data/neighbor-reasons";
 
 /**
@@ -1666,7 +1667,7 @@ export const PLANTS: Plant[] = [
     sowing: [10, 11, 2, 3],
     harvest: [5, 6, 7],
     companions: tagComp("fava", ["lattuga", "patata", "ravanello", "songino", "carota"]),
-    antagonists: tagAnti("fava", ["aglio", "cipolla", "porro", "scalogno", "fagiolo", "pisello", "finocchio"]),
+    antagonists: tagAnti("fava", ["aglio", "cipolla", "cipollotto", "porro", "scalogno", "fagiolo", "pisello", "finocchio"]),
     fertilizer: {
       demand: "fixer",
       type: [
@@ -1800,6 +1801,54 @@ export const PLANTS: Plant[] = [
         "rotazione di 3-4 anni senza Allium",
         "rete antinsetto",
         "olio di neem per tripidi",
+      ],
+    },
+  },
+  {
+    id: "cipollotto",
+    name: "Cipollotto",
+    scientific: "Allium fistulosum",
+    emoji: "🌱",
+    category: "radice",
+    perCell: 9,
+    defaultSpacingCm: 10,
+    sun: "full",
+    water: "medium",
+    sowing: [3, 4, 5, 6, 7, 8, 9],
+    transplanting: [4, 5, 6],
+    harvest: [5, 6, 7, 8, 9, 10, 11, 12, 1, 2],
+    companions: tagComp("cipollotto", [
+      "carota",
+      "pomodoro",
+      "lattuga",
+      "bietola",
+      "cetriolo",
+      "prezzemolo",
+      "fragola",
+    ]),
+    antagonists: tagAnti("cipollotto", ["fagiolo", "pisello", "fava"]),
+    fertilizer: {
+      demand: "low",
+      type: [
+        "compost maturo (alla coltura precedente)",
+        "fosforo e potassio leggeri in pre-semina",
+      ],
+      schedule: "fondo + 1-2 coperture leggere in crescita attiva",
+      notes:
+        "evitare letame fresco; tagli ripetuti su cespi perenni richiedono reintegrazione organica moderata",
+    },
+    treatments: {
+      pests: [
+        "peronospora delle liliacee",
+        "mosca della cipolla (Delia antiqua)",
+        "tripidi (Thrips tabaci)",
+        "Botrytis (marciume del colletto)",
+      ],
+      remedies: [
+        "poltiglia bordolese contro peronospora",
+        "rete antinsetto contro mosca",
+        "olio di neem contro tripidi",
+        "rotazione di 3-4 anni lontano da Allium",
       ],
     },
   },
@@ -2275,6 +2324,7 @@ export const PLANTS: Plant[] = [
     fertilizer: ZUCCHINI_FERTILIZER,
     treatments: ZUCCHINI_TREATMENTS,
   },
+  ...EDIBLE_FLOWERS,
 ];
 
 export const PLANTS_BY_ID = Object.fromEntries(PLANTS.map((p) => [p.id, p]));
@@ -2379,6 +2429,7 @@ const ROTATION_META_BY_ID: Partial<Record<string, PlantRotationMeta>> = {
 
   // Alliaceae (Amaryllidaceae s.l. in botanica moderna)
   cipolla: { cropFamily: "alliaceae", rotationGroup: "allium", rotationBreakYears: 3, cropCycleDays: { min: 120, max: 240 } },
+  cipollotto: { cropFamily: "alliaceae", rotationGroup: "allium", rotationBreakYears: 3, cropCycleDays: { min: 70, max: 120 } },
   aglio: { cropFamily: "alliaceae", rotationGroup: "allium", rotationBreakYears: 3, cropCycleDays: { min: 160, max: 260 } },
   porro: { cropFamily: "alliaceae", rotationGroup: "allium", rotationBreakYears: 3, cropCycleDays: { min: 140, max: 240 } },
 
@@ -2408,6 +2459,24 @@ const ROTATION_META_BY_ID: Partial<Record<string, PlantRotationMeta>> = {
 
   // Asteraceae (aromatica)
   dragoncello: { cropFamily: "asteraceae", rotationGroup: "perennial", rotationBreakYears: 2, cropCycleDays: { min: 120, max: 365 } },
+
+  // Fiori eduli
+  borragine: { cropFamily: "other", rotationGroup: "aromatic", rotationBreakYears: 1, cropCycleDays: { min: 60, max: 120 } },
+  nasturzio: { cropFamily: "other", rotationGroup: "other", rotationBreakYears: 1, cropCycleDays: { min: 50, max: 90 } },
+  calendula: { cropFamily: "asteraceae", rotationGroup: "other", rotationBreakYears: 1, cropCycleDays: { min: 60, max: 100 } },
+  "crisantemo-edule": { cropFamily: "asteraceae", rotationGroup: "leafy", rotationBreakYears: 2, cropCycleDays: { min: 60, max: 90 } },
+  girasole: { cropFamily: "asteraceae", rotationGroup: "other", rotationBreakYears: 1, cropCycleDays: { min: 90, max: 120 } },
+  "rosa-edule": { cropFamily: "other", rotationGroup: "perennial", rotationBreakYears: 1 },
+  "sambuco-fiore": { cropFamily: "other", rotationGroup: "perennial", rotationBreakYears: 1 },
+  emerocallide: { cropFamily: "other", rotationGroup: "perennial", rotationBreakYears: 1 },
+  monarda: { cropFamily: "lamiaceae", rotationGroup: "aromatic", rotationBreakYears: 1 },
+  tulbaghia: { cropFamily: "alliaceae", rotationGroup: "allium", rotationBreakYears: 2 },
+  "fiori-eduli-misti": {
+    cropFamily: "other",
+    rotationGroup: "other",
+    rotationBreakYears: 1,
+    cropCycleDays: { min: 60, max: 150 },
+  },
 
   // Alliaceae
   "erba-cipollina": { cropFamily: "alliaceae", rotationGroup: "allium", rotationBreakYears: 3, cropCycleDays: { min: 365, max: 3650 } },

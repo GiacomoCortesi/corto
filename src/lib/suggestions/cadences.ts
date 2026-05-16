@@ -61,6 +61,10 @@ export const CATEGORY_CADENCES: Cadences = {
     weeding: { everyDays: 10, toleranceDays: 4 },
     watering: { everyDays: 2, toleranceDays: 1 },
   },
+  "fiore-edule": {
+    weeding: { everyDays: 14, toleranceDays: 5 },
+    watering: { everyDays: 3, toleranceDays: 2 },
+  },
 };
 
 /**

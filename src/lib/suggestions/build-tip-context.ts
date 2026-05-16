@@ -22,7 +22,7 @@ export function buildTipContext(
   const inSeasonNoSpace: string[] = [];
 
   for (const plant of PLANTS) {
-    const canSow = plant.sowing.includes(month);
+    const canSow = (plant.sowing ?? []).includes(month);
     const canTransplant = (plant.transplanting ?? []).includes(month);
     if (!canSow && !canTransplant) continue;
 

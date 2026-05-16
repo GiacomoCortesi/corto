@@ -7,6 +7,7 @@ export const PLANT_CATEGORIES = [
   { id: "radice", label: "Radici" },
   { id: "leguminosa", label: "Legumi" },
   { id: "aromatica", label: "Aromat." },
+  { id: "fiore-edule", label: "Fiori" },
 ] as const;
 
 export type PlantCategoryFilter = (typeof PLANT_CATEGORIES)[number]["id"];
